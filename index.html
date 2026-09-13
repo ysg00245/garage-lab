@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EDF0F3">
+<title>Garage Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--bg:#EDF0F3;--surface:#fff;--ink:#13233A;--ink2:#3B4A5E;--muted:#758296;--line:#D5DBE2;--go:#0FA968;
+--font:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;--num:"Barlow Condensed",var(--font)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;display:flex;justify-content:center}
+.wrap{width:100%;max-width:560px;padding:calc(env(safe-area-inset-top) + 32px) 20px calc(env(safe-area-inset-bottom) + 48px)}
+h1{font-size:26px;font-weight:800;letter-spacing:-.03em}
+.sub{margin-top:8px;font-size:15px;line-height:1.65;color:var(--ink2);max-width:42ch}
+h2{margin:34px 0 0;font-size:13px;font-weight:700;color:var(--ink2);padding-bottom:10px;border-bottom:1.5px solid var(--ink)}
+ul{list-style:none}
+.item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;padding:18px 2px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+li:last-child .item{border-bottom:0}
+a.item:focus-visible{outline:2.5px solid var(--ink);outline-offset:2px;border-radius:6px}
+.t{display:block;font-size:17px;font-weight:700;letter-spacing:-.02em}
+.d{display:block;margin-top:5px;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.go{font:700 15px var(--num);color:var(--ink);padding:9px 15px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--line);white-space:nowrap}
+.tags{margin-top:9px;display:flex;gap:6px;flex-wrap:wrap}
+.tags span{font:600 12px var(--font);color:var(--muted);padding:4px 9px;border-radius:7px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.body{display:block;min-width:0}
+.soon{opacity:.55}
+.soon .go{color:var(--muted)}
+footer{margin-top:36px;font-size:12.5px;line-height:1.75;color:var(--muted)}
+@media(prefers-reduced-motion:no-preference){a.item .go{transition:background .2s,color .2s,box-shadow .2s}a.item:hover .go{background:var(--ink);color:#fff;box-shadow:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>Garage Lab</h1>
+  <p class="sub">주말에 만든 단일 파일 웹 실험들. 설치 없이 브라우저에서 바로 돌아가고, 각각 HTML 한 장으로 끝납니다.</p>
+
+  <h2>실험</h2>
+  <ul>
+    <li><a class="item" href="./zeroback/">
+      <span class="body">
+        <span class="t">제로백</span>
+        <span class="d">폰 GPS와 가속도 센서로 0–100, 0–200 가속 시간을 잽니다. 출발과 도착은 자동으로 감지해요.</span>
+        <span class="tags"><span>GPS</span><span>가속도 센서</span><span>자동차</span></span>
+      </span>
+      <span class="go">열기</span>
+    </a></li>
+    <li><span class="item soon">
+      <span class="body">
+        <span class="t">다음 실험</span>
+        <span class="d">자리를 비워 뒀어요. 폴더를 하나 더 만들고 위 목록에 줄을 추가하면 됩니다.</span>
+      </span>
+      <span class="go">준비 중</span>
+    </span></li>
+  </ul>
+
+  <footer>단일 파일 원칙: 실험 하나당 폴더 하나, 그 안에 index.html 한 장. 빌드 도구도, 의존성 설치도 없습니다.</footer>
+</main>
+</body>
+</html>
