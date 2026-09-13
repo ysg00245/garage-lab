@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EDF0F3">
+<title>제로백 · GPS 가속 측정기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --ink:#13233A; --ink2:#3B4A5E; --muted:#758296;
+  --line:#D5DBE2; --track:#DCE1E7;
+  --amber:#F5A300; --amber-soft:#FFE7AE; --go:#0FA968; --red:#E5484D;
+  --font:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --num:"Barlow Condensed","Pretendard",system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+body{min-height:100dvh;display:flex;justify-content:center}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible{outline:2.5px solid var(--ink);outline-offset:3px}
+.app{width:100%;max-width:520px;padding:calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 112px)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:8px}
+.brand h1{font-size:21px;font-weight:800;letter-spacing:-.03em}
+.brand span{font-size:12px;color:var(--muted);font-weight:600}
+.pill{display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:99px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:12px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums}
+#gpsText{display:flex;align-items:center;gap:8px}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#C3CAD3;transition:background .3s}
+.pill .sep{width:1px;height:11px;background:var(--line)}
+.pill.search .dot{background:var(--amber);animation:blink 1s ease-in-out infinite}
+.pill.good .dot{background:var(--go)} .pill.mid .dot{background:var(--amber)} .pill.bad .dot{background:var(--red)}
+.pill .tag{color:var(--amber);font-weight:700}
+@keyframes blink{50%{opacity:.25}}
+
+/* gauge */
+.gauge{position:relative;margin:10px auto 0;max-width:400px}
+.gauge svg{display:block;width:100%;height:auto;overflow:visible}
+.g-track{fill:none;stroke:var(--track);stroke-width:14;stroke-linecap:round}
+.g-zone{fill:none;stroke:var(--amber-soft);stroke-width:30;transition:opacity .3s}
+.g-prog{fill:none;stroke:var(--ink);stroke-width:14;stroke-linecap:round;stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke .4s}
+body[data-state="run"] .g-prog{stroke:var(--go)}
+.tk{stroke:#BFC7D1;stroke-width:1.5;stroke-linecap:round}
+.tk.maj{stroke:#7C8898;stroke-width:2}
+.tl{font:600 13px var(--num);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+.g-mark{stroke:var(--ink);stroke-width:3;stroke-linecap:round}
+.g-knob{fill:#fff;stroke:var(--ink);stroke-width:3.5;transition:stroke .4s}
+body[data-state="run"] .g-knob{stroke:var(--go)}
+.readout{position:absolute;left:0;right:0;top:31%;text-align:center;pointer-events:none}
+.spd{font:700 clamp(84px,27vw,118px)/.9 var(--num);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.unit{margin-top:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.glive{position:absolute;left:0;right:0;bottom:3%;text-align:center;font-size:12px;color:var(--muted);font-weight:600}
+.glive b{font:600 20px var(--num);color:var(--ink2);margin-right:2px;font-variant-numeric:tabular-nums}
+
+/* mode */
+.seg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin-top:14px;padding:4px;border-radius:14px;background:#DFE4EA}
+.seg .ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/4);border-radius:10px;background:var(--surface);box-shadow:0 1px 2px rgba(19,35,58,.12),0 4px 10px rgba(19,35,58,.06);transition:transform .38s var(--ease)}
+.seg button{position:relative;z-index:1;height:40px;border:0;background:none;font:600 17px var(--num);color:var(--muted);letter-spacing:.01em;transition:color .25s}
+.seg button.on{color:var(--ink)}
+.seg button:disabled{cursor:default}
+.seg.lock{opacity:.55}
+
+/* timer */
+.timing{margin-top:26px}
+.row{display:flex;align-items:center;gap:12px}
+.tree{display:flex;gap:6px}
+.tree i{width:11px;height:11px;border-radius:50%;background:#D3D9E0;transition:background .25s,box-shadow .25s}
+body[data-state="wait"] .tree i:nth-child(1){background:var(--amber);animation:blink 1s infinite}
+body[data-state="armed"] .tree i:nth-child(-n+3){background:var(--amber);box-shadow:0 0 0 3px rgba(245,163,0,.18);animation:stage 1.8s ease-in-out infinite}
+body[data-state="armed"] .tree i:nth-child(2){animation-delay:.15s}
+body[data-state="armed"] .tree i:nth-child(3){animation-delay:.3s}
+body[data-state="run"] .tree i:nth-child(4),body[data-state="done"] .tree i:nth-child(4){background:var(--go);box-shadow:0 0 0 3px rgba(15,169,104,.2)}
+body[data-flash="red"] .tree i{background:var(--red)!important;box-shadow:none!important;animation:none!important}
+@keyframes stage{50%{box-shadow:0 0 0 6px rgba(245,163,0,.05)}}
+.mode-label{font:600 18px var(--num);color:var(--ink2);letter-spacing:.01em}
+.timer{display:flex;align-items:baseline;margin-top:2px;font:700 88px/1 var(--num);letter-spacing:-.01em;font-variant-numeric:tabular-nums;transition:color .3s}
+.timer small{font-size:30px;color:var(--muted);margin-left:6px;font-weight:600}
+body[data-state="run"] .timer{color:var(--go)}
+.timer.pop{animation:pop .55s var(--ease)}
+@keyframes pop{0%{transform:scale(1.05)}100%{transform:scale(1)}}
+.timer{transform-origin:left 70%}
+.status{margin-top:8px;font-size:15px;line-height:1.5;color:var(--ink2);min-height:22px}
+.status.warn{color:var(--red)}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.meta span{display:inline-flex;align-items:baseline;gap:3px;padding:7px 11px;border-radius:9px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:12.5px;color:var(--muted);font-weight:600}
+.meta b{font:600 17px var(--num);color:var(--ink)}
+.meta span[class^="q-"] b{font:700 14px var(--font)}
+.meta .q-good b{color:var(--go)} .meta .q-mid b{color:#C88400} .meta .q-low b{color:var(--red)}
+
+/* records */
+.records{margin-top:34px}
+.records h2{font-size:14px;font-weight:700;color:var(--ink2)}
+.records ol{list-style:none}
+.records li{display:grid;grid-template-columns:78px 1fr auto;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid var(--line)}
+.records li.new{animation:rowin .5s var(--ease)}
+@keyframes rowin{from{opacity:0;transform:translateY(-6px)}}
+.rm{font:600 17px var(--num);color:var(--ink2)}
+.rt{font:700 28px/1 var(--num);font-variant-numeric:tabular-nums}
+.rt small{font-size:16px;color:var(--muted);margin-left:2px}
+.rt em{font:700 11px var(--font);font-style:normal;color:#9A6500;background:var(--amber-soft);padding:3px 7px;border-radius:6px;margin-left:8px;vertical-align:4px}
+.rt em.d{color:var(--muted);background:#E1E6EC}
+.rx{text-align:right;font-size:12px;color:var(--muted);line-height:1.5;font-variant-numeric:tabular-nums}
+.rx i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.rx i.good{background:var(--go)} .rx i.mid{background:var(--amber)} .rx i.low{background:var(--red)}
+.rec-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:10px;border-bottom:1.5px solid var(--ink)}
+.link{border:0;background:none;padding:6px 0;font-size:13.5px;font-weight:600;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.calib{margin-top:14px}
+.calib-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.calib-row label{font-size:13.5px;color:var(--ink2);font-weight:600;margin-right:2px}
+.calib-row input{width:104px;height:44px;padding:0 12px;border:0;border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--line);font:600 21px var(--num);color:var(--ink);font-variant-numeric:tabular-nums}
+.calib-row input::-webkit-outer-spin-button,.calib-row input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.calib-row input{-moz-appearance:textfield}
+.calib-row input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--ink)}
+.calib-row .apply{height:44px;padding:0 16px;border:0;border-radius:12px;background:var(--ink);color:#fff;font-size:14px;font-weight:700}
+.calib-row.show{animation:rowin .35s var(--ease)}
+.empty{padding:18px 0;font-size:14px;color:var(--muted)}
+.note{margin-top:22px;font-size:12.5px;line-height:1.7;color:var(--muted)}
+
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:14px 20px calc(env(safe-area-inset-bottom) + 16px);background:linear-gradient(to top,var(--bg) 72%,rgba(237,240,243,0))}
+.dock-in{display:flex;gap:10px;width:100%;max-width:480px}
+.main{flex:1;height:58px;border:0;border-radius:16px;background:var(--ink);color:#fff;font-size:17px;font-weight:700;letter-spacing:-.01em;transition:transform .15s,background .25s,color .25s,box-shadow .25s}
+.main:active,.ghost:active{transform:scale(.98)}
+.main.secondary{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.ghost{width:76px;height:58px;border:0;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--line);font-size:14px;font-weight:600;color:var(--ink2);transition:transform .15s}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body data-state="idle">
+<main class="app">
+  <header class="top">
+    <div class="brand"><h1>제로백</h1><span>GPS 가속 측정기</span></div>
+    <div class="pill" id="gpsPill" aria-live="polite"><i class="dot"></i><span id="gpsText">GPS 꺼짐</span></div>
+  </header>
+
+  <section class="gauge" aria-label="현재 속도">
+    <svg id="gauge" viewBox="0 0 320 292"></svg>
+    <div class="readout"><div class="spd" id="spd">0</div><div class="unit">km/h</div></div>
+    <div class="glive"><b id="gLive">0.00</b>G</div>
+  </section>
+
+  <nav class="seg" id="seg" aria-label="측정 구간">
+    <span class="ind" id="segInd"></span>
+    <button class="on" data-a="0" data-b="100">0–100</button>
+    <button data-a="0" data-b="200">0–200</button>
+    <button data-a="60" data-b="100">60–100</button>
+    <button data-a="100" data-b="200">100–200</button>
+  </nav>
+
+  <section class="timing">
+    <div class="row"><div class="tree" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="mode-label" id="modeLabel">0 → 100 km/h</div></div>
+    <div class="timer" id="timer"><span id="tSec">0.00</span><small>초</small></div>
+    <p class="status" id="status" aria-live="polite"></p>
+    <div class="meta" id="meta" hidden></div>
+    <div class="calib" id="calib" hidden>
+      <button class="link" id="calibOpen">제원 기록으로 보정하기</button>
+      <div class="calib-row" id="calibRow" hidden>
+        <label for="specIn" id="specLabel">제원 0–100 기록</label>
+        <input id="specIn" type="number" inputmode="decimal" step="0.01" min="1" max="60" placeholder="6.50">
+        <button class="apply" id="calibApply">적용</button>
+        <button class="link" id="calibOff" hidden>보정 끄기</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="records">
+    <div class="rec-head"><h2>측정 기록</h2><button class="link" id="recClear" hidden>전체 지우기</button></div>
+    <ol id="recList"></ol>
+    <p class="empty" id="recEmpty">측정을 마치면 여기에 쌓여요.</p>
+  </section>
+
+  <p class="note">트랙이나 통제된 장소에서만 사용하세요. 폰은 대시보드 앞쪽, 하늘이 보이게 거치하면 정확도가 올라가요. 출발과 도착은 자동으로 감지되니 주행 중에는 화면을 만질 필요가 없어요. 정지 출발 기록이 제원보다 늘 느리게 나오면, 측정 후 제원 기록을 입력해서 GPS 지연을 보정할 수 있어요.</p>
+</main>
+
+<div class="dock"><div class="dock-in">
+  <button class="main" id="mainBtn">시작하기</button>
+  <button class="ghost" id="demoBtn">데모</button>
+</div></div>
+
+<script>
+/* ---------- 설정 ---------- */
+const VMAX = 240, CX = 160, CY = 162, R = 124;
+const KEY = 'zeroback:v1', LAT_MAX = 500;
+const TRIG_MIN = 1.2;       // 출발 감지 최소 가속도 (m/s², 약 0.12G)
+const QUIET_MIN = 0.35;
+
+const $ = id => document.getElementById(id);
+const T0 = performance.timeOrigin || (Date.now() - performance.now());
+const clock = () => T0 + performance.now();
+
+/* ---------- 상태 ---------- */
+const S = {IDLE:0, READY:1, WAIT:2, ARMED:3, RUN:4, DONE:5};
+const SNAME = ['idle','ready','wait','armed','run','done'];
+let state = S.IDLE, mode = {a:0, b:100};
+let lastFix = null, fixes = [];
+let watchId = null, sensorsOn = false, hasMotion = false, grav = null;
+let ema = 0, floorN = 0.15, trigStart = null, buf = [];
+let fwd = null, fwdLearn = null, aF = 0, liveG = 0;
+let run = null, armedBelow = false, result = null, records = [];
+let vEst = 0, dispV = 0, lastFrame = 0, timerVal = 0, settle = null;
+let flashMsg = null, wakeLock = null, demo = null;
+let latencyMs = 0;   // GPS 지연 보정값 (정지 출발 측정에만 적용)
+
+function load(){
+  try { const d = JSON.parse(localStorage.getItem(KEY) || 'null'); if (d){ records = d.records || []; latencyMs = d.latencyMs || 0; } } catch(e){}
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify({records: records.filter(r => !r.demo).slice(0,100), latencyMs})); } catch(e){}
+}
+
+/* ---------- 게이지 ---------- */
+const ang = v => 135 + 270 * Math.min(Math.max(v,0),VMAX) / VMAX;
+const pt = (a,r) => ({x: CX + r*Math.cos(a*Math.PI/180), y: CY + r*Math.sin(a*Math.PI/180)});
+function arcPath(v1, v2, r){
+  const a1 = ang(v1), a2 = ang(v2), p1 = pt(a1,r), p2 = pt(a2,r);
+  return `M${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A${r} ${r} 0 ${a2-a1>180?1:0} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+}
+function buildGauge(){
+  let h = `<path class="g-track" d="${arcPath(0,VMAX,R)}"/><path class="g-zone" id="gZone"/>`;
+  for (let v = 0; v <= VMAX; v += 10){
+    const a = ang(v), maj = v % 20 === 0, p1 = pt(a,R-18), p2 = pt(a, maj ? R-29 : R-23);
+    h += `<line class="tk${maj?' maj':''}" x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"/>`;
+    if (v % 40 === 0){ const p = pt(a,R+32); h += `<text class="tl" x="${p.x}" y="${p.y}">${v}</text>`; }
+  }
+  h += `<path class="g-prog" id="gProg" pathLength="1000" d="${arcPath(0,VMAX,R)}"/>`;
+  h += `<line class="g-mark" id="gMark"/><circle class="g-knob" id="gKnob" r="9"/>`;
+  $('gauge').innerHTML = h;
+  placeZone();
+}
+function placeZone(){
+  $('gZone').setAttribute('d', arcPath(mode.a, mode.b, R));
+  const a = ang(mode.b), p1 = pt(a,R-15), p2 = pt(a,R+15), m = $('gMark');
+  m.setAttribute('x1',p1.x); m.setAttribute('y1',p1.y); m.setAttribute('x2',p2.x); m.setAttribute('y2',p2.y);
+}
+
+/* ---------- 센서 ---------- */
+async function enableSensors(){
+  if (!('geolocation' in navigator)){ flash('이 브라우저는 위치 기능을 지원하지 않아요.', true); return false; }
+  const pr = location.protocol, host = location.hostname;
+  const okHost = host === 'localhost' || host === '127.0.0.1';
+  if (pr === 'file:' || pr === 'content:'){
+    flash('파일을 직접 연 상태라 크롬이 GPS를 막아요. 권한 창도 안 떠요. HTTPS 주소에 올려서 열어야 동작해요.', true, 8000); return false;
+  }
+  if (pr !== 'https:' && !okHost){
+    flash(`지금 주소(${pr}//${host || '로컬'})에서는 GPS를 쓸 수 없어요. https 주소로 열어 주세요.`, true, 8000); return false;
+  }
+  if (window.top !== window.self && !navigator.geolocation.getCurrentPosition){
+    flash('미리보기 화면에서는 GPS가 막혀 있어요. 새 탭에서 열어 주세요.', true, 6000); return false;
+  }
+  try {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function')
+      await DeviceMotionEvent.requestPermission();
+  } catch(e){}
+  window.addEventListener('devicemotion', onMotion);
+  watchId = navigator.geolocation.watchPosition(onPos, onPosErr, {enableHighAccuracy:true, maximumAge:0, timeout:20000});
+  sensorsOn = true;
+  return true;
+}
+function disableSensors(){
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  window.removeEventListener('devicemotion', onMotion);
+  watchId = null; sensorsOn = false; lastFix = null; fixes = []; fwd = null; grav = null; hasMotion = false;
+}
+function onPosErr(err){
+  if (err.code === 1){
+    disableSensors(); setState(S.IDLE);
+    flash('위치 권한이 거부됐어요. 크롬 주소창 왼쪽 아이콘 → 권한에서 위치를 허용하고, 안드로이드 설정에서 크롬의 위치 권한도 켜 주세요.', true, 9000);
+  } else if (err.code === 2){
+    flash('위치를 찾지 못했어요. 기기의 위치 기능이 켜져 있는지 확인해 주세요.', true, 6000);
+  } else if (err.code === 3 && !lastFix){
+    flash('신호를 못 잡고 있어요. 창가나 실외처럼 하늘이 보이는 곳에서 다시 시도해 주세요.', true, 6000);
+  }
+}
+function hav(la1,lo1,la2,lo2){
+  const k = Math.PI/180, dLa = (la2-la1)*k, dLo = (lo2-lo1)*k;
+  const s = Math.sin(dLa/2)**2 + Math.cos(la1*k)*Math.cos(la2*k)*Math.sin(dLo/2)**2;
+  return 12742000 * Math.asin(Math.sqrt(s));
+}
+function onPos(p){
+  const t = clock(), c = p.coords;
+  let v = c.speed;
+  if (v == null || isNaN(v)){
+    v = (lastFix && lastFix.lat != null) ? hav(lastFix.lat,lastFix.lon,c.latitude,c.longitude) / Math.max(.2,(t-lastFix.t)/1000) : 0;
+  }
+  handleFix(t, Math.max(0, v*3.6), c.accuracy || 99, c.latitude, c.longitude);
+}
+function onMotion(e){
+  const t = clock(); let x, y, z;
+  const a = e.acceleration;
+  if (a && a.x != null){ x = a.x; y = a.y; z = a.z; }
+  else {
+    const g = e.accelerationIncludingGravity; if (!g || g.x == null) return;
+    if (!grav) grav = {x:g.x, y:g.y, z:g.z};
+    if (state !== S.RUN){ const k = .02; grav.x += (g.x-grav.x)*k; grav.y += (g.y-grav.y)*k; grav.z += (g.z-grav.z)*k; }
+    x = g.x-grav.x; y = g.y-grav.y; z = g.z-grav.z;
+  }
+  hasMotion = true;
+  handleAccel(t, x, y, z);
+}
+
+/* ---------- 가속도: 출발 감지 ---------- */
+function handleAccel(t, x, y, z){
+  const m = Math.hypot(x,y,z);
+  ema += (m - ema) * .25;
+  buf.push({t, m:ema, x, y, z});
+  while (buf.length && t - buf[0].t > 1500) buf.shift();
+
+  if (fwdLearn){
+    if (t < fwdLearn.until){ fwdLearn.x += x; fwdLearn.y += y; fwdLearn.z += z; }
+    else { const n = Math.hypot(fwdLearn.x,fwdLearn.y,fwdLearn.z); if (n > 1e-3) fwd = {x:fwdLearn.x/n, y:fwdLearn.y/n, z:fwdLearn.z/n}; fwdLearn = null; }
+  }
+  const af = fwd ? x*fwd.x + y*fwd.y + z*fwd.z : ema;
+  aF += (af - aF) * .12;
+  liveG = Math.max(0, aF) / 9.81;
+  if (state === S.RUN && run) run.peakG = Math.max(run.peakG, liveG);
+
+  if (state !== S.ARMED || mode.a !== 0) return;
+  if (!lastFix || lastFix.v >= 4){ trigStart = null; return; }
+  if (trigStart === null) floorN += (ema - floorN) * .01;
+  const TRIG = Math.max(TRIG_MIN, floorN*3.5), QUIET = Math.max(QUIET_MIN, floorN*1.6);
+  if (ema > TRIG){
+    if (trigStart === null) trigStart = t;
+    if (t - trigStart >= 180){
+      let t0 = trigStart;
+      for (let i = buf.length-1; i >= 0; i--){ if (buf[i].t <= trigStart && buf[i].m < QUIET){ t0 = buf[i].t; break; } }
+      fwd = null; fwdLearn = {x:0, y:0, z:0, until:t0 + 400};
+      for (const s of buf) if (s.t >= t0){ fwdLearn.x += s.x; fwdLearn.y += s.y; fwdLearn.z += s.z; }
+      startRun(t0, 'accel');
+    }
+  } else trigStart = null;
+}
+
+/* ---------- GPS: 속도 & 도착 판정 ---------- */
+const interp = (p,f,x) => f.v === p.v ? f.t : p.t + (x-p.v)/(f.v-p.v)*(f.t-p.t);
+function handleFix(t, v, acc, lat, lon){
+  const prev = lastFix, f = {t, v, acc, lat, lon};
+  lastFix = f; fixes.push(f); if (fixes.length > 6) fixes.shift();
+  if (fwd) vEst += (v - vEst) * .5;
+
+  if (state === S.WAIT && acc <= 25) setState(S.ARMED);
+  else if (state === S.ARMED){
+    if (mode.a === 0){
+      if (!hasMotion && prev && prev.v < 3 && v >= 3){
+        const slope = (v-prev.v)/(t-prev.t);
+        startRun(Math.max(prev.t-1000, Math.min(t, t - v/slope)), 'gps');
+        onRunFix(prev, f);
+      }
+    } else {
+      if (v < mode.a - 2) armedBelow = true;
+      if (armedBelow && prev && prev.v < mode.a && v >= mode.a){
+        startRun(interp(prev,f,mode.a), 'gps');
+        onRunFix(prev, f);
+      }
+    }
+  } else if (state === S.RUN) onRunFix(prev, f);
+  renderGps(); renderStatus();
+}
+function onRunFix(prev, f){
+  if (f.t > run.t0){ run.fixes.push(f); run.accSum += f.acc; run.n++; }
+  run.vmax = Math.max(run.vmax, f.v);
+  if (!run.confirmed){
+    if (f.v >= 6) run.confirmed = true;
+    else if (f.t - run.t0 > 3500){ falseStart(); return; }
+  }
+  if (prev && prev.v < mode.b && f.v >= mode.b){ finish(interp(prev,f,mode.b)); return; }
+  if (run.vmax - f.v > 8 && f.t - run.t0 > 2000){ abort('속도가 줄어서 측정을 멈췄어요. 다시 대기할게요.'); return; }
+  if (f.t - run.t0 > 90000) abort('측정 시간이 너무 길어서 멈췄어요.');
+}
+function currentHz(){
+  if (fixes.length < 2) return 0;
+  const a = fixes[0], b = fixes[fixes.length-1];
+  return (fixes.length-1) / Math.max(.001,(b.t-a.t)/1000);
+}
+
+/* ---------- 측정 흐름 ---------- */
+function startRun(t0, src){
+  run = {t0, src, confirmed: src !== 'accel', fixes: [], vmax: 0, peakG: 0, accSum: 0, n: 0};
+  result = null; settle = null;
+  setState(S.RUN); vibrate(25);
+}
+function finish(tEnd){
+  const raw = Math.max(0, (tEnd - run.t0)/1000);
+  const lat = run.src === 'accel' ? latencyMs : 0;
+  const time = Math.max(0, raw - lat/1000);
+  const pts = [{t:run.t0, v:mode.a}, ...run.fixes.filter(f => f.t > run.t0 && f.t < tEnd), {t:tEnd, v:mode.b}];
+  let dist = 0; for (let i = 1; i < pts.length; i++) dist += (pts[i].v + pts[i-1].v)/2/3.6 * (pts[i].t - pts[i-1].t)/1000;
+  const accAvg = run.n ? run.accSum/run.n : (lastFix ? lastFix.acc : 99), hz = currentHz();
+  let q = 'mid';
+  if (accAvg <= 6 && hz >= .9 && (mode.a > 0 || run.src === 'accel')) q = 'good';
+  else if (accAvg > 12 || hz < .6) q = 'low';
+  result = {id: Date.now(), a: mode.a, b: mode.b, time, raw, lat, dist, g: run.peakG, q, src: run.src, demo: !!demo};
+  records.unshift(result); save();
+  settle = {from: timerVal, to: time, start: performance.now()};
+  const tm = $('timer'); tm.classList.remove('pop'); void tm.offsetWidth; tm.classList.add('pop');
+  run = null;
+  setState(S.DONE); vibrate([30,60,30]); renderRecords(result.id);
+  if (demo) demo.brakeAt = clock() + 700;
+}
+function falseStart(){ run = null; trigStart = null; timerVal = 0; setState(S.ARMED); flash('출발이 확인되지 않아서 다시 대기할게요.', true); }
+function abort(msg){ run = null; trigStart = null; armedBelow = false; timerVal = 0; setState(S.ARMED); flash(msg, true); }
+function arm(){
+  run = null; result = null; trigStart = null; armedBelow = false; timerVal = 0; settle = null;
+  setState((!lastFix || lastFix.acc > 25 || clock() - lastFix.t > 4000) ? S.WAIT : S.ARMED);
+  requestWake();
+}
+
+/* ---------- UI ---------- */
+function setState(s){ state = s; document.body.dataset.state = SNAME[s]; renderUI(); }
+function renderUI(){
+  const b = $('mainBtn'); let label, primary = true;
+  if (!sensorsOn) label = '시작하기';
+  else if (state === S.READY) label = '측정 준비';
+  else if (state === S.DONE) label = '다시 측정';
+  else { label = '취소'; primary = false; }
+  b.textContent = label; b.classList.toggle('secondary', !primary);
+  const lock = state === S.RUN;
+  $('seg').classList.toggle('lock', lock);
+  document.querySelectorAll('#seg button').forEach(x => x.disabled = lock);
+  $('demoBtn').textContent = demo ? '중지' : '데모';
+  renderStatus(); renderMeta(); renderCalib(); renderGps();
+}
+function statusText(){
+  switch (state){
+    case S.IDLE: return '시작하기를 누르면 GPS에 연결해요.';
+    case S.READY: return '측정 준비를 누르면 출발을 기다려요.';
+    case S.WAIT: return 'GPS 신호를 잡는 중이에요. 하늘이 보이는 곳이 좋아요.';
+    case S.ARMED:
+      if (mode.a === 0){
+        if (lastFix && lastFix.v >= 4) return '차를 완전히 세우면 대기 상태가 돼요.';
+        return hasMotion ? '준비됐어요. 출발하면 자동으로 시작해요.' : '준비됐어요. 가속도 센서가 없어서 GPS로 출발 시점을 추정해요.';
+      }
+      return armedBelow ? `${mode.a} km/h를 넘는 순간부터 측정해요.` : `${mode.a} km/h 아래로 속도를 낮춰 주세요.`;
+    case S.RUN: return `${mode.b} km/h에 도달하면 자동으로 멈춰요.`;
+    case S.DONE: return result ? (result.src === 'accel' ? '측정 완료. 출발은 가속도 센서로 감지했어요.' : '측정 완료.') : '측정 완료.';
+  }
+  return '';
+}
+function renderStatus(){
+  const el = $('status'), f = flashMsg && performance.now() < flashMsg.until;
+  el.textContent = f ? flashMsg.text : statusText();
+  el.classList.toggle('warn', !!(f && flashMsg.warn));
+  if (f && flashMsg.warn) document.body.dataset.flash = 'red'; else delete document.body.dataset.flash;
+}
+function flash(text, warn = false, ms = 3500){
+  flashMsg = {text, warn, until: performance.now() + ms};
+  if (warn) vibrate(80);
+  renderStatus(); setTimeout(renderStatus, ms + 30);
+}
+const QL = {good:'좋음', mid:'보통', low:'낮음'};
+function renderMeta(){
+  const m = $('meta');
+  if (state !== S.DONE || !result){ m.hidden = true; return; }
+  m.hidden = false;
+  m.innerHTML = `<span>최대 <b>${result.g.toFixed(2)}</b>G</span><span><b>${Math.round(result.dist)}</b>m 주행</span><span class="q-${result.q}">신뢰도 <b>${QL[result.q]}</b></span>`
+    + (result.lat ? `<span>지연 보정 <b>${(result.lat/1000).toFixed(2)}</b>초</span>` : '');
+}
+function renderCalib(){
+  const show = state === S.DONE && result && result.src === 'accel';
+  $('calib').hidden = !show;
+  if (!show){ $('calibRow').hidden = true; return; }
+  $('calibOpen').textContent = latencyMs ? '보정값 다시 맞추기' : '제원 기록으로 보정하기';
+  $('specLabel').textContent = `제원 ${result.a}–${result.b} 기록`;
+  $('calibOff').hidden = !latencyMs;
+}
+function openCalib(){
+  const row = $('calibRow'); row.hidden = !row.hidden;
+  if (!row.hidden){ row.classList.remove('show'); void row.offsetWidth; row.classList.add('show'); $('specIn').focus(); }
+}
+function applyCalib(){
+  const spec = parseFloat($('specIn').value);
+  if (!(spec > 0) || !result){ flash('제원 기록을 초 단위로 입력해 주세요. 예: 6.5', true); return; }
+  let lat = Math.round((result.raw - spec) * 1000), msg;
+  if (lat <= 0){ lat = 0; msg = '측정값이 제원보다 빠르거나 같아서 보정하지 않았어요.'; }
+  else if (lat > LAT_MAX){ lat = LAT_MAX; msg = `차이가 커서 최대치 ${LAT_MAX}ms만 적용했어요. 노면이나 출발 방식 차이일 수 있어요.`; }
+  else msg = `보정값 ${lat}ms를 저장했어요. 다음 정지 출발 측정부터 자동으로 반영돼요.`;
+  setLatency(lat, msg);
+}
+function setLatency(lat, msg){
+  if (result.demo) msg = '데모 기록이라 화면에만 반영했어요. 실제 측정 후 보정하면 저장돼요.';
+  else latencyMs = lat;
+  const from = result.time;
+  result.lat = lat; result.time = Math.max(0, result.raw - lat/1000);
+  save();
+  settle = {from, to: result.time, start: performance.now()};
+  $('calibRow').hidden = true; $('specIn').value = '';
+  renderMeta(); renderCalib(); renderRecords(); flash(msg, false, 4500);
+}
+function renderGps(){
+  const pill = $('gpsPill'); let cls = 'off', html = 'GPS 꺼짐';
+  if (sensorsOn){
+    if (!lastFix || clock() - lastFix.t > 4000){ cls = 'search'; html = '신호 찾는 중'; }
+    else {
+      cls = lastFix.acc <= 6 ? 'good' : lastFix.acc <= 15 ? 'mid' : 'bad';
+      html = `${currentHz().toFixed(1)}Hz<i class="sep"></i>±${Math.round(lastFix.acc)}m`;
+    }
+  }
+  if (demo) html = `<b class="tag">데모</b><i class="sep"></i>` + html;
+  pill.className = 'pill ' + cls;
+  $('gpsText').innerHTML = html;
+}
+function renderRecords(newId){
+  $('recEmpty').hidden = records.length > 0;
+  $('recClear').hidden = records.length === 0;
+  const best = {}, cnt = {};
+  records.forEach(r => { const k = r.a+'-'+r.b+(r.demo?'d':''); cnt[k] = (cnt[k]||0)+1; if (!best[k] || r.time < best[k].time) best[k] = r; });
+  $('recList').innerHTML = records.map(r => {
+    const k = r.a+'-'+r.b+(r.demo?'d':''), isBest = best[k] === r && cnt[k] > 1;
+    return `<li class="${r.id === newId ? 'new' : ''}"><span class="rm">${r.a}–${r.b}</span>
+      <span class="rt">${r.time.toFixed(2)}<small>초</small>${r.demo ? '<em class="d">데모</em>' : isBest ? '<em>최고</em>' : ''}</span>
+      <span class="rx"><i class="${r.q}"></i>${fmtDate(r.id)}<br>${r.g.toFixed(2)}G&ensp;${Math.round(r.dist)}m</span></li>`;
+  }).join('');
+}
+function fmtDate(ms){
+  const d = new Date(ms), p = n => String(n).padStart(2,'0');
+  return `${d.getMonth()+1}.${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function setMode(btn, idx){
+  if (state === S.RUN) return;
+  mode = {a: +btn.dataset.a, b: +btn.dataset.b};
+  document.querySelectorAll('#seg button').forEach(x => x.classList.toggle('on', x === btn));
+  $('segInd').style.transform = `translateX(${idx*100}%)`;
+  $('modeLabel').textContent = `${mode.a} → ${mode.b} km/h`;
+  placeZone();
+  if (state === S.ARMED){ armedBelow = false; trigStart = null; }
+  if (state === S.DONE && sensorsOn) setState(S.READY);
+  renderStatus();
+}
+function vibrate(p){ try { navigator.vibrate && navigator.vibrate(p); } catch(e){} }
+async function requestWake(){
+  try { if ('wakeLock' in navigator && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } } catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && sensorsOn) requestWake(); });
+
+/* ---------- 렌더 루프 ---------- */
+let lastSpd = -1, lastTxt = '', lastG = '';
+function frame(now){
+  const dt = Math.min(.1, lastFrame ? (now - lastFrame)/1000 : 0); lastFrame = now;
+  const tNow = clock(), gv = lastFix ? lastFix.v : 0;
+
+  if (fwd && lastFix && (state === S.RUN || state === S.DONE)) vEst += aF * 3.6 * dt;   // 센서 융합: GPS 사이를 가속도로 메움
+  else vEst += (gv - vEst) * (1 - Math.exp(-dt*6));
+  if (gv < 1.5 && Math.abs(aF) < .4) vEst *= Math.exp(-dt*4);
+  vEst = Math.max(0, vEst);
+  dispV += (vEst - dispV) * (1 - Math.exp(-dt*12));
+
+  const shown = dispV < 1.5 ? 0 : Math.round(dispV);
+  if (shown !== lastSpd){ $('spd').textContent = shown; lastSpd = shown; }
+  const f = Math.min(dispV, VMAX) / VMAX;
+  $('gProg').style.strokeDashoffset = (1000 * (1 - f)).toFixed(1);
+  const k = pt(ang(dispV), R); const kn = $('gKnob'); kn.setAttribute('cx', k.x.toFixed(2)); kn.setAttribute('cy', k.y.toFixed(2));
+  const g = liveG.toFixed(2); if (g !== lastG){ $('gLive').textContent = g; lastG = g; }
+
+  if (state === S.RUN && run){
+    timerVal = Math.max(0, (tNow - run.t0)/1000);
+    if (!run.confirmed && tNow - run.t0 > 4500) falseStart();
+  } else if (settle){
+    const p = Math.min(1, (now - settle.start)/450), e = 1 - Math.pow(1-p, 3);
+    timerVal = settle.from + (settle.to - settle.from) * e;
+    if (p >= 1) { timerVal = settle.to; settle = null; }
+  }
+  const txt = timerVal.toFixed(2); if (txt !== lastTxt){ $('tSec').textContent = txt; lastTxt = txt; }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- 데모 (가상 주행) ---------- */
+function startDemo(){
+  if (sensorsOn) disableSensors();
+  demo = {launchAt: clock() + 2200, V: 250, T: 12.14, brakeAt: null, gps: null, acc: null};
+  sensorsOn = true; hasMotion = true; lastFix = null; fixes = []; fwd = null; vEst = 0; floorN = .15;
+  demoFix();
+  demo.gps = setInterval(demoFix, 1000);
+  demo.acc = setInterval(demoAcc, 16);
+  arm();
+}
+function stopDemo(){
+  if (!demo) return;
+  clearInterval(demo.gps); clearInterval(demo.acc); demo = null;
+  disableSensors();
+  setState(state === S.DONE ? S.DONE : S.IDLE);
+}
+function demoSpeed(t){
+  const d = demo; if (t < d.launchAt) return 0;
+  const vAt = s => d.V * (1 - Math.exp(-s/d.T));
+  if (d.brakeAt && t > d.brakeAt) return Math.max(0, vAt((d.brakeAt-d.launchAt)/1000) - 30*(t-d.brakeAt)/1000);
+  return vAt((t-d.launchAt)/1000);
+}
+function demoAccel(t){
+  const d = demo; if (t < d.launchAt) return 0;
+  if (d.brakeAt && t > d.brakeAt) return demoSpeed(t) > 0 ? -30/3.6 : 0;
+  const s = (t-d.launchAt)/1000;
+  return Math.min(1, s/.12) * (d.V/d.T) * Math.exp(-s/d.T) / 3.6;
+}
+function demoFix(){
+  if (!demo) return;
+  const t = clock(); let v = demoSpeed(t);
+  if (v > .5) v += (Math.random() - .5) * .8;
+  handleFix(t, Math.max(0, v), 3.2 + Math.random()*2, null, null);
+  if (demo && demo.brakeAt && t > demo.brakeAt && demoSpeed(t) <= 0) setTimeout(stopDemo, 600);
+}
+function demoAcc(){
+  if (!demo) return;
+  const t = clock(), a = demoAccel(t), n = () => (Math.random() - .5) * .16;
+  handleAccel(t, a*.08 + n(), a*.97 + n(), a*.22 + n());
+}
+
+/* ---------- 이벤트 ---------- */
+$('mainBtn').onclick = async () => {
+  if (!sensorsOn){ if (await enableSensors()) arm(); else renderUI(); return; }
+  if (state === S.READY || state === S.DONE) arm();
+  else if (demo) stopDemo();
+  else { run = null; timerVal = 0; setState(S.READY); }
+};
+$('demoBtn').onclick = () => { if (demo){ stopDemo(); timerVal = 0; setState(S.IDLE); } else startDemo(); };
+document.querySelectorAll('#seg button').forEach((b,i) => b.onclick = () => setMode(b, i));
+setInterval(renderGps, 1000);
+$('calibOpen').onclick = openCalib;
+$('calibApply').onclick = applyCalib;
+$('specIn').addEventListener('keydown', e => { if (e.key === 'Enter') applyCalib(); });
+$('calibOff').onclick = () => setLatency(0, '보정을 껐어요.');
+$('recClear').onclick = () => { if (confirm('측정 기록을 모두 지울까요?')){ records = []; save(); renderRecords(); } };
+
+load(); buildGauge(); setState(S.IDLE); renderRecords(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
