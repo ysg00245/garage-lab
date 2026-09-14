@@ -68,7 +68,7 @@ button:focus-visible{outline:2.5px solid var(--ink);outline-offset:3px}
 
 /* 탭 · 드라이브 모드 · 차종 */
 .bar{display:flex;gap:6px;margin-top:14px}
-.tabs{flex:1;min-width:0;display:grid;grid-template-columns:repeat(3,1fr);padding:3px;border-radius:12px;background:var(--seg)}
+.tabs{flex:1;min-width:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:3px;border-radius:12px;background:var(--seg)}
 .tabs button{position:relative;height:36px;border:0;border-radius:9px;background:none;font-size:14.5px;font-weight:700;color:var(--muted);transition:background .25s,color .25s}
 .tabs button.on{background:var(--seg-on);color:var(--ink);box-shadow:0 1px 2px var(--shadow)}
 .tabs button.rec::after{content:"";position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 1.4s ease-in-out infinite}
@@ -117,9 +117,24 @@ body[data-state="run"] .th-comfort .g-knob,body.riding .th-comfort .g-knob{strok
 .gbar{display:none;width:64px;height:4px;border-radius:2px;background:var(--track);overflow:hidden}
 .gbar i{display:block;height:100%;width:0;border-radius:2px;background:var(--go);transition:width .12s linear,background .3s}
 .gbar i.over{background:var(--amber)}
-.gbadge{display:none;position:absolute;top:14px;left:18px;font:700 14px var(--num);letter-spacing:.18em}
-.shift{display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);gap:4px}
-.shift i{width:14px;height:6px;border-radius:2px;background:var(--cl-off);transition:background .08s,box-shadow .08s}
+.gbadge{display:none;position:absolute;top:13px;left:18px;font:700 12.5px var(--num);letter-spacing:.14em}
+.gbest{display:none;position:absolute;top:10px;right:18px;text-align:right;font:600 10px var(--num);letter-spacing:.16em;color:var(--cl-muted)}
+.gbest b{display:block;font:700 17px/1 var(--num);letter-spacing:.02em;color:var(--cl-ink)}
+.shift{display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);gap:3px}
+.shift i{width:11px;height:6px;border-radius:2px;background:var(--cl-off);transition:background .08s,box-shadow .08s}
+/* 모드 전환 연출: 모드 이름이 떠오르고, 링이 끝까지 쓸고 돌아오고, 빛줄기가 지나간다 */
+.modefx{position:absolute;inset:0;z-index:2;display:grid;place-content:center;text-align:center;pointer-events:none;opacity:0}
+.modefx b{font:italic 700 46px/1 var(--num);letter-spacing:.2em;color:var(--acc,var(--ink));text-shadow:0 0 24px color-mix(in srgb,var(--acc,#fff) 45%,transparent)}
+.modefx small{display:block;margin-top:8px;font:700 12px var(--font);letter-spacing:.3em;color:var(--muted)}
+.cl .modefx small{color:var(--cl-muted)}
+.modefx.go{animation:fxin 1.3s var(--ease) both}
+@keyframes fxin{0%{opacity:0;transform:scale(1.4);letter-spacing:.7em;filter:blur(8px)}18%{opacity:1;transform:scale(1);filter:blur(0)}68%{opacity:1}100%{opacity:0;transform:scale(.94)}}
+.gauge.fx .readout,.gauge.fx .glive{animation:fxhide 1.3s both}
+@keyframes fxhide{0%,66%{opacity:0}100%{opacity:1}}
+.gauge::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;background:linear-gradient(100deg,transparent 35%,color-mix(in srgb,var(--acc,#fff) 40%,transparent) 50%,transparent 65%) no-repeat;background-size:260% 100%}
+.gauge.fx::after{animation:streak .85s .08s cubic-bezier(.4,0,.2,1) both}
+@keyframes streak{0%{opacity:1;background-position:130% 0}100%{opacity:0;background-position:-30% 0}}
+.th-eco{--acc:var(--go)} .th-comfort{--acc:var(--ink2)}
 .shift.flash i{animation:blink .16s steps(1) infinite}
 
 /* 에코: 초록 + 부드러운 가속 코치 */
@@ -127,7 +142,11 @@ body[data-state="run"] .th-comfort .g-knob,body.riding .th-comfort .g-knob{strok
 .th-eco .gbar{display:block}
 .th-eco .gbadge{display:block;color:var(--go)}
 /* 스포츠 · 스포츠+: 어두운 클러스터, LED 링, 시프트 라이트, 12시 정렬 */
-.gauge.cl{background:var(--cl-bg);box-shadow:inset 0 0 0 1px var(--cl-line),0 10px 30px rgba(5,8,12,.25);padding:34px 12px 46px}   /* 눈금을 돌리면 아래 숫자가 원 밖으로 내려와서 아래 여백을 넉넉히 */
+.gauge.cl{background:radial-gradient(120% 90% at 50% 40%,#17212C 0%,#0B1017 55%,#04070A 100%);box-shadow:inset 0 0 0 1px var(--cl-line),inset 0 1px 0 rgba(255,255,255,.06),0 12px 32px rgba(5,8,12,.28);padding:34px 12px 46px}
+.gauge.cl::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(118deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 36%)}   /* 유리 반사 */
+.cl .gbest{display:block}
+.bz{fill:none;stroke:url(#bzg);stroke-width:1.5}
+.th-sportp .spd{text-shadow:0 0 22px rgba(245,163,0,.28)} .th-sport .spd{text-shadow:0 0 22px rgba(255,77,82,.22)}   /* 눈금을 돌리면 아래 숫자가 원 밖으로 내려와서 아래 여백을 넉넉히 */
 .cl .g-track{stroke:var(--cl-off)}
 .cl .tk{stroke:var(--cl-tick)} .cl .tk.maj{stroke:var(--cl-tick2)}
 .cl .tl{fill:var(--cl-muted)}
@@ -141,7 +160,8 @@ body[data-state="run"] .th-comfort .g-knob,body.riding .th-comfort .g-knob{strok
 .cl .gbadge{display:block;color:var(--acc)}
 .cl .shift{display:flex}
 .sg{fill:none;stroke:var(--cl-off);stroke-width:16;transition:stroke .1s}
-.th-sportp .sg.on{filter:drop-shadow(0 0 3px var(--glow))}
+.cl .sg.on{filter:drop-shadow(0 0 3px var(--glow))}
+.cl .sg.lead{filter:drop-shadow(0 0 7px var(--glow))}
 .th-sport{--acc:#FF4D52} .th-sportp{--acc:#F5A300}
 
 /* mode */
@@ -354,6 +374,8 @@ body.riding .stat b{color:var(--ink)}
     <svg id="gauge" viewBox="0 0 320 292"></svg>
     <div class="readout"><div class="spd" id="spd">0</div><div class="unit">km/h</div></div>
     <div class="glive"><span><b id="gLive">0.00</b>G</span><span class="gbar"><i id="gBar"></i></span></div>
+    <div class="gbest" id="gBest"></div>
+    <div class="modefx" id="modeFx" aria-hidden="true"><b id="fxName"></b><small id="fxSub"></small></div>
   </section>
 
   <!-- 가속 · 제동 -->
@@ -459,8 +481,8 @@ body.riding .stat b{color:var(--ink)}
       <p>시작 속도보다 5 km/h쯤 빠르게 달리다가 브레이크를 밟으면, 시작 속도 아래로 떨어지는 순간부터 완전히 멈출 때까지의 거리와 시간을 재요. 중간에 속도가 다시 오르면 멈춰요.</p>
       <p class="fine">제동은 3초 안팎으로 짧아서 GPS 위치가 몇 번밖에 안 들어와요. 정지 순간은 직전 감속률로 추정해요. 자동차는 1~2m, 자전거는 그보다 크게 틀릴 수 있어요. 신뢰도 표시를 같이 봐 주세요.</p>
 
-      <h3>주행 기록</h3>
-      <p>주행 탭에서 주행 시작을 누르면 거리, 최고·평균 속도, 경로를 기록해요. 끝내면 지도에 속도별 색으로 경로를 그려 줘요.</p>
+      <h3>주행 기록 (전기자전거)</h3>
+      <p>자동차는 트립미터가 있어서 주행 탭은 전기자전거에서만 보여요. 주행 탭에서 주행 시작을 누르면 거리, 최고·평균 속도, 경로를 기록해요. 끝내면 지도에 속도별 색으로 경로를 그려 줘요.</p>
       <p class="fine">평균 속도는 신호 대기처럼 멈춘 시간을 빼고 계산해요. 화면이 꺼지거나 다른 앱으로 넘어가면 브라우저가 위치를 받지 못해요. 화면을 켠 채로 달려 주세요. 꺼졌던 구간은 직선으로 이어 붙여요.</p>
       <p class="fine">GPX 내보내기로 받은 파일은 구글 내 지도(My Maps), 스트라바 같은 서비스에 올릴 수 있어요.</p>
 
@@ -513,7 +535,7 @@ const PROFILES = {
          demo:{V:250, T:12.14, decel:30, lift:9}, bdemo:{v:115, g:.95}},
   bike: {name:'전기자전거', vmax:50, tick:5, major:10, label:10, limit:25,
          ranges:[[0,15],[0,25],[0,0]], brakes:[25,15], splits:[10,15,20,25,30],
-         drop:3, sDrop:1.5, minPeak:8, trig:.9, hero:[0,25],
+         drop:3, sDrop:1.5, minPeak:8, trig:.9, hero:[0,25], ride:true,
          dms:[{id:'pedal', name:'페달', th:'eco', badge:'PEDAL'}, {id:'throttle', name:'스로틀', th:'sport', badge:'THROTTLE'}],
          demo:{V:32, T:4, decel:6, lift:8}, bdemo:{v:30, g:.5}},
 };
@@ -591,6 +613,9 @@ function buildGauge(){
   box.className = `gauge th-${th}` + (GT.cl ? ' cl' : '');
   $('gBadge').textContent = dmInfo(prof, dm).badge || GT.badge;
   let h = '';
+  if (GT.cl) h += '<defs><linearGradient id="bzg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5C6878"/><stop offset=".5" stop-color="#18212C"/><stop offset="1" stop-color="#3A4654"/></linearGradient>'
+    + '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r=".7" fill="#fff" fill-opacity=".06"/></pattern></defs>'
+    + `<circle cx="${CX}" cy="${CY}" r="${R-38}" fill="url(#dots)"/><path class="bz" d="${arcPath(0, VMAX, R+15)}"/>`;   // 촘촘한 점 무늬 다이얼과 금속 테
   if (GT.seg){
     const st = VMAX / SEGS;
     h += '<g id="gSeg">' + Array.from({length: SEGS}, (_, i) => `<path class="sg" d="${arcPath(i*st + st*.16, (i+1)*st - st*.16, R)}"/>`).join('') + '</g>';
@@ -629,8 +654,10 @@ function paintCluster(v){
   if (n !== litN){
     const ref = GTARGET || VMAX * .8, st = VMAX / SEGS;
     segEls.forEach((el, i) => {
-      const on = i < n, c = on ? GT.color((i + .5) * st / ref) : '';
-      el.classList.toggle('on', on); el.style.stroke = c;
+      // 맨 앞 칸은 하얗게 달아오른 색으로 (속도의 끝이 한눈에 보이게)
+      const on = i < n, lead = on && i === n - 1, c = on ? GT.color((i + .5) * st / ref) : '';
+      el.classList.toggle('on', on); el.classList.toggle('lead', lead);
+      el.style.stroke = lead ? '#FFEDE3' : c;
       if (on) el.style.setProperty('--glow', c);
     });
     litN = n;
@@ -655,7 +682,33 @@ function setDriveMode(id, silent){
   $('dmName').textContent = d.name; $('dmBtn').style.setProperty('--dm', DM_COLOR[d.th]);
   $('dmBtn').setAttribute('aria-label', `드라이브 모드: ${d.name}. 누르면 다음 모드로 바꿔요`);
   buildGauge(); renderSegBest(); renderRecords();
-  if (!silent){ toast(`${d.name} 모드`); tone(GT.cl ? 520 : 760, 90); vibrate(15); }
+  if (!silent) runModeFx();
+}
+// N 모드 진입처럼: 모드 이름이 떠오르고, 링이 끝까지 쓸었다 돌아오고, 엔진 회전음이 한 번 오른다
+let sweep = null;
+function runModeFx(){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box = $('gaugeBox'), fx = $('modeFx'), d = dmInfo(prof, dm);
+  $('fxName').textContent = d.badge || GT.badge;
+  $('fxSub').textContent = `${P.name} · ${d.name}`;
+  box.classList.remove('fx'); fx.classList.remove('go'); void box.offsetWidth;
+  box.classList.add('fx'); fx.classList.add('go');
+  clearTimeout(runModeFx.t);
+  runModeFx.t = setTimeout(() => { box.classList.remove('fx'); fx.classList.remove('go'); }, 1350);
+  sweep = {t: performance.now()};
+  revSound(!!GT.cl); vibrate(GT.cl ? [20, 60, 90] : 20);
+}
+function revSound(hard){
+  if (!prefs.sound || !audio) return;
+  try {
+    const t = audio.currentTime, o = audio.createOscillator(), f = audio.createBiquadFilter(), g = audio.createGain(), vol = hard ? .12 : .05;
+    o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = hard ? 1500 : 800;
+    o.frequency.setValueAtTime(hard ? 85 : 140, t);
+    o.frequency.exponentialRampToValueAtTime(hard ? 440 : 280, t + .45);
+    o.frequency.exponentialRampToValueAtTime(hard ? 140 : 170, t + 1.1);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .05); g.gain.setValueAtTime(vol, t + .5); g.gain.exponentialRampToValueAtTime(.001, t + 1.15);
+    o.connect(f).connect(g).connect(audio.destination); o.start(t); o.stop(t + 1.2);
+  } catch(e){}
 }
 
 /* ---------- 센서 ---------- */
@@ -1199,6 +1252,9 @@ function renderSegBest(){
     const brake = b.dataset.k === 'brake', a = +b.dataset.a, bb = brake ? null : +b.dataset.b, r = bestOf(a, bb);
     b.querySelector('small').textContent = !r ? '' : brake ? r.dist.toFixed(1) + 'm' : bb === 0 ? r.vmax.toFixed(1) + 'km/h' : r.time.toFixed(2) + '초';
   });
+  // 클러스터 오른쪽 위: 지금 구간 · 지금 모드의 최고 기록
+  const cur = tab === 'ride' ? null : bestOf(mode.a, mode.b);
+  $('gBest').innerHTML = !cur ? '' : 'BEST<b>' + (mode.k === 'brake' ? cur.dist.toFixed(1) + 'm' : isSprint(mode) ? cur.vmax.toFixed(1) : cur.time.toFixed(2) + 's') + '</b>';
 }
 function fmtDate(ms){
   const d = new Date(ms), p = n => String(n).padStart(2,'0');
@@ -1211,7 +1267,7 @@ function setMode(btn, idx){
   document.querySelectorAll('#seg button').forEach(x => x.classList.toggle('on', x === btn));
   $('segInd').style.transform = `translateX(${idx*100}%)`;
   $('modeLabel').textContent = modeText();
-  placeZone();
+  placeZone(); renderSegBest();
   prefs.modes[`${prof}:${k}`] = idx; save();
   if (state === S.ARMED){ armedBelow = false; trigStart = null; }
   // 구간을 바꾸면 화면의 결과는 비운다. 기록은 아래 목록에 남아 있다
@@ -1245,12 +1301,15 @@ function setProfile(p, silent){
   prof = p; P = PROFILES[p]; VMAX = P.vmax; prefs.prof = p; save();
   $('profBtn').dataset.p = p;
   $('profBtn').setAttribute('aria-label', `차종: ${P.name}. 누르면 ${p === 'car' ? '전기자전거' : '자동차'}로 바꿔요`);
+  // 자동차는 트립미터가 있으니 주행 기록은 자전거에서만
+  $('tabRide').hidden = !P.ride;
+  if (!P.ride && tab === 'ride'){ tab = 'accel'; if (!silent) setTab('accel'); }
   if (state === S.DONE || state === S.ARMED || state === S.WAIT) setState(sensorsOn ? S.READY : S.IDLE);
   result = null; openId = null; openRide = null; timerVal = 0;
   setDriveMode(PROFILES[p].dms.some(d => d.id === prefs.dm[p]) ? prefs.dm[p] : PROFILES[p].dms[0].id, true);
   applySeg(); buildGauge();
   renderRecords(); renderRides(); renderUI();
-  if (!silent) toast(`${P.name} · ${dmInfo(p, dm).name} 모드`);
+  if (!silent) runModeFx();
 }
 
 /* ---------- 주행 기록 ---------- */
@@ -1550,10 +1609,20 @@ function frame(now){
 
   const shown = dispV < 1.5 ? 0 : Math.round(dispV);
   if (shown !== lastSpd){ $('spd').textContent = shown; lastSpd = shown; }
-  if (GT.seg) paintCluster(dispV);
+  // 모드 전환 스윕: 0.5초에 끝까지 올라갔다가 현재 속도로 내려온다
+  let gvShow = dispV;
+  if (sweep){
+    const p = (now - sweep.t) / 1150;
+    if (p >= 1) sweep = null;
+    else {
+      const k = p < .42 ? 1 - Math.pow(1 - p/.42, 3) : p < .52 ? 1 : 1 - Math.pow((p - .52)/.48, 2);
+      gvShow = dispV + (VMAX - dispV) * k;
+    }
+  }
+  if (GT.seg) paintCluster(gvShow);
   else {
-    $('gProg').style.strokeDashoffset = (1000 * (1 - Math.min(dispV, VMAX) / VMAX)).toFixed(1);
-    const k = pt(ang(dispV), R); const kn = $('gKnob'); kn.setAttribute('cx', k.x.toFixed(2)); kn.setAttribute('cy', k.y.toFixed(2));
+    $('gProg').style.strokeDashoffset = (1000 * (1 - Math.min(gvShow, VMAX) / VMAX)).toFixed(1);
+    const k = pt(ang(gvShow), R); const kn = $('gKnob'); kn.setAttribute('cx', k.x.toFixed(2)); kn.setAttribute('cy', k.y.toFixed(2));
   }
   const g = liveG.toFixed(2); if (g !== lastG){ $('gLive').textContent = g; lastG = g; }
   const gw = Math.round(Math.min(1, liveG) * 100);
@@ -1629,7 +1698,7 @@ function demoAcc(){
 /* ---------- 데모: 주행 (여의도 한 바퀴를 실제 기록 로직에 흘려 넣는다) ---------- */
 function demoRide(){
   if (ride){ toast('주행 기록 중에는 데모를 쓸 수 없어요.'); return; }
-  const car = prof === 'car', N = car ? 720 : 900, scale = car ? 2.3 : 1;
+  const N = 900, scale = 1;
   const c = {lat: 37.5262, lon: 126.9320}, rot = -28 * Math.PI/180, ax = 1150, by = 430;
   const mLat = 111320, mLon = 111320 * Math.cos(c.lat * Math.PI/180);
   const ring = Array.from({length: 361}, (_, i) => {
