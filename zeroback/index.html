@@ -320,6 +320,10 @@ body.riding .stat b{color:var(--ink)}
 .map .leaflet-control-attribution{background:var(--surface)!important;color:var(--muted);font-size:10px}
 .map .leaflet-control-attribution a{color:var(--ink2)}
 .map.dark .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88)}
+.map{position:relative;height:280px!important}
+.mapfit{position:absolute;left:10px;bottom:10px;z-index:3;height:32px;padding:0 12px;border:0;border-radius:9px;background:#fff;color:#13233A;font:700 12.5px var(--font);box-shadow:0 2px 8px rgba(0,0,0,.22)}
+.kdot{width:13px;height:13px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.klabel{padding:4px 8px;border-radius:6px;background:#fff;color:#13233A;font:700 12px var(--font);box-shadow:0 2px 8px rgba(0,0,0,.22);white-space:nowrap}
 .map-msg{display:grid;place-items:center;height:100%;font-size:13px;color:var(--muted)}
 .mleg{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .mleg i{display:flex;gap:2px}
@@ -514,7 +518,7 @@ body.riding .stat b{color:var(--ink)}
       <dl class="dl">
         <dt>0–100 · 0–25 같은 구간</dt><dd>목표 속도까지 걸린 시간을 재요. 목표에 닿기 전에 멈추면 기록하지 않아요.</dd>
         <dt>최고속도</dt><dd>목표 없이 끝까지 밟아요. 속도가 줄거나 더 오르지 않는 순간 끝나고, 도달한 최고 속도와 거기까지 걸린 시간을 남겨요.</dd>
-        <dt>60–100 · 100–200 · 20–40</dt><dd>달리면서 재요. 시작 속도 아래로 줄였다가 가속하면, 그 속도를 넘는 순간부터 재요.</dd>
+        <dt>60–100 · 100–200 · 20–35</dt><dd>달리면서 재요. 시작 속도 아래로 줄였다가 가속하면, 그 속도를 넘는 순간부터 재요.</dd>
       </dl>
 
       <h3>제동</h3>
@@ -570,12 +574,13 @@ const THEMES = {
 const PROFILES = {
   car:  {name:'자동차', vmax:240, tick:10, major:20, label:40, limit:0,
          ranges:[[0,100],[0,200],[60,100],[100,200],[0,0]], brakes:[100,60], splits:[60,80,100,150,200],
-         drop:8, sDrop:3, minPeak:20, trig:1.2, hero:[0,100],
+         drop:8, sDrop:3, minPeak:20, trig:1.0, maxA:50, hero:[0,100],
          dms:[{id:'eco', name:'에코', th:'eco'}, {id:'comfort', name:'컴포트', th:'comfort'}, {id:'sport', name:'스포츠', th:'sport'}, {id:'sportp', name:'스포츠+', th:'sportp'}],
          demo:{V:250, T:12.14, decel:30, lift:9}, bdemo:{v:115, g:.95}},
   bike: {name:'전기자전거', vmax:50, tick:5, major:10, label:10, limit:25,
-         ranges:[[0,25],[0,40],[20,40],[0,0]], brakes:[25,15], splits:[10,20,25,30],
-         drop:3, sDrop:1.5, minPeak:8, trig:.9, hero:[0,25], ride:true,
+         ranges:[[0,25],[0,35],[20,35],[0,0]], brakes:[25,15], splits:[10,20,25,30],
+         drop:3, sDrop:1.5, minPeak:8, trig:.6, maxA:25, hero:[0,25], ride:true,
+         stillStop:true,   // 자전거는 달리는 동안 늘 떨린다: 떨림이 멎으면 GPS가 뭐라든 선 것으로 본다 (자동차는 매끈한 도로에서 조용할 수 있어 GPS도 본다)
          dms:[{id:'pedal', name:'페달', th:'eco', badge:'PEDAL'}, {id:'throttle', name:'스로틀', th:'sport', badge:'THROTTLE'}],
          demo:{V:48, T:6, decel:6, lift:8}, bdemo:{v:30, g:.5}},   // 0–40 까지 닿도록 최고 48km/h 로 가속하는 가상 자전거
 };
@@ -858,6 +863,7 @@ function disableSensors(){
   if (pollId !== null) clearInterval(pollId);
   window.removeEventListener('devicemotion', onMotion);
   watchId = null; pollId = null; lastRawTs = 0; lastSeenT = 0; sensorsOn = false; lastFix = null; fixes = []; fwd = null; grav = null; hasMotion = false; weakSince = null;
+  stillSince = null; stopT = null; moveStart = null;
 }
 function onPosErr(err){
   if (err.code === 1){
@@ -888,7 +894,11 @@ function onPos(p){
   let v = c.speed;
   lastAge = age; hasDevSpeed = !(v == null || isNaN(v));
   if (v == null || isNaN(v)){
-    v = (lastFix && lastFix.lat != null) ? hav(lastFix.lat,lastFix.lon,c.latitude,c.longitude) / Math.max(.2,(t-lastFix.t)/1000) : 0;
+    // 기기가 속도를 안 줄 때만 좌표 차이로 계산. 0.2초 사이 28m 튄 좌표로 498km/h 가 찍힌 적이 있어서
+    // 1초 가까이 떨어져 있고 정확도가 좋을 때만 쓰고, 아니면 직전 속도를 유지한다
+    const dts = lastFix ? (t - lastFix.t)/1000 : 0;
+    v = lastFix && lastFix.lat != null && dts >= .8 && (c.accuracy || 99) <= 20
+      ? hav(lastFix.lat,lastFix.lon,c.latitude,c.longitude) / dts : (lastFix ? lastFix.v/3.6 : 0);
   }
   handleFix(t, Math.max(0, v*3.6), c.accuracy || 99, c.latitude, c.longitude, age, hasDevSpeed);
 }
@@ -910,6 +920,11 @@ function onMotion(e){
 function handleAccel(t, x, y, z){
   const m = Math.hypot(x,y,z);
   ema += (m - ema) * .25;
+  lastAccelT = t;
+  // 떨림이 거의 없으면 '멈춤' 후보. 멈출 때 GPS보다 3~4초 먼저 0 을 보여 주는 데 쓴다
+  if (ema < STILL_A){ if (stillSince === null) stillSince = t; }
+  else { if (stillSince !== null && t - stillSince > 400) moveStart = t; stillSince = null; }   // 멈춰 있다 다시 떨리기 시작한 순간
+  if (stillSince !== null && t - stillSince > 400 && lastFix && (P.stillStop || lastFix.v < 10)) stopT = t;   // 떨림으로 본 '섰다' (GPS보다 3~4초 빠르다)
   buf.push({t, m:ema, x, y, z});
   while (buf.length && t - buf[0].t > 1500) buf.shift();
 
@@ -925,12 +940,17 @@ function handleAccel(t, x, y, z){
   if (state === S.RUN && run) run.peakG = Math.max(run.peakG, brake ? ema / 9.81 : liveG);
 
   if (state !== S.ARMED || mode.a !== 0 || brake) return;
-  if (!lastFix || lastFix.v >= 4){ trigStart = null; return; }
+  // 선 상태여야 출발을 잰다. GPS는 멈춘 걸 3~4초 늦게 알아서, 떨림이 멎었으면(1.5초 이내) GPS가 아직 몇 km/h 라도 선 것으로 본다.
+  // 예전엔 GPS만 봐서, 측정이 한 번 실패한 뒤 바로 다시 출발하면 출발을 통째로 놓쳤다
+  const stopped = lastFix && (lastFix.v < 4 || (stopT !== null && t - stopT < 1500));
+  if (!stopped){ trigStart = null; return; }
   if (trigStart === null) floorN += (ema - floorN) * .01;
-  const TRIG = Math.max(P.trig, floorN*3.5), QUIET = Math.max(QUIET_MIN, floorN*1.6);
+  // 출발 감지: 기준을 낮추고 0.1초만 이어져도 출발로 본다. 둔하게 잡으면 출발을 늦게 알아채 기록이 짧게 나온다.
+  // 잘못 감지해도 3.5초 안에 속도가 안 붙으면 '출발 확인 안 됨'으로 다시 대기한다
+  const TRIG = Math.max(P.trig, floorN*2.8), QUIET = Math.max(QUIET_MIN, floorN*1.6);
   if (ema > TRIG){
     if (trigStart === null) trigStart = t;
-    if (t - trigStart >= 180){
+    if (t - trigStart >= 100){
       let t0 = trigStart;
       for (let i = buf.length-1; i >= 0; i--){ if (buf[i].t <= trigStart && buf[i].m < QUIET){ t0 = buf[i].t; break; } }
       fwd = null; fwdLearn = {x:0, y:0, z:0, until:t0 + 400};
@@ -945,9 +965,13 @@ const interp = (p,f,x) => f.v === p.v ? f.t : p.t + (x-p.v)/(f.v-p.v)*(f.t-p.t);
 function handleFix(t, v, acc, lat, lon, age = 0, dev = true){
   const prev = lastFix, f = {t, v, acc, lat, lon, age, dev, gap: prev ? t - prev.t : 0};
   diagLog.unshift(f); if (diagLog.length > 8) diagLog.pop();
+  // 튀는 값 거르기: 계기판 최고치의 1.3배를 넘거나, 1초 안에 차가 낼 수 없는 만큼 속도가 바뀌면 버린다
+  if (v > VMAX * 1.3 || (prev && t - prev.t < 3000 && Math.abs(v - prev.v) / Math.max(.25, (t - prev.t)/1000) > P.maxA)){
+    f.bad = true; if (diagOn) renderDiag(); return;
+  }
   lastFix = f; fixes.push(f); if (fixes.length > 6) fixes.shift();
   weakSince = acc > ACC_MID ? (weakSince ?? t) : null;
-  if (fwd) vEst += (v - vEst) * .5;
+  learnFwd(prev, f);
   if (ride && !demo) rideFix(f);
 
   if (state === S.WAIT && acc <= ACC_ARM){ setState(S.ARMED); cue('ready'); }
@@ -960,9 +984,15 @@ function handleFix(t, v, acc, lat, lon, age = 0, dev = true){
         onRunFix(prev, f);
       }
     } else if (mode.a === 0){
-      if (!hasMotion && prev && prev.v < 3 && v >= 3){
-        const slope = (v-prev.v)/(t-prev.t);
-        startRun(Math.max(prev.t-1000, Math.min(t, t - v/slope)), 'gps');
+      if (v < 3) stopT = t;
+      // 안전망: 가속도 센서가 출발을 놓쳤거나 센서가 없으면, 최근에 섰다가 5km/h 를 넘은 순간 GPS로 잡는다.
+      // 출발 시각은 떨림이 다시 시작된 순간, 그것도 없으면 GPS 가속으로 거슬러 추정
+      // 늦게 따라오는 GPS가 '서 있는데 13km/h' 를 보여 줄 때 속지 않도록, 속도가 실제로 오르고 있고 떨림이 있을 때만
+      if (prev && v >= 5 && v > prev.v + 1 && stillSince === null && stopT !== null && t - stopT < 5000){
+        const slope = (v - prev.v) / Math.max(1, t - prev.t);
+        const est = Math.max(prev.t - 1000, Math.min(t, slope > 0 ? t - v/slope : prev.t));
+        const byMotion = moveStart !== null && moveStart >= stopT - 1500 && moveStart < t;
+        startRun(byMotion ? moveStart : est, byMotion ? 'motion' : 'gps');
         onRunFix(prev, f);
       }
     } else {
@@ -1186,7 +1216,7 @@ function statusText(){
       if (isWeak()) return `신호가 약해서 기록이 부정확할 수 있어요(±${Math.round(lastFix.acc)}m). 트인 곳으로 가 보세요.`;
       if (brake) return armedBelow ? `준비됐어요. 브레이크를 밟으면 ${mode.a} km/h 아래로 떨어지는 순간부터 재요.` : `${mode.a + 5} km/h쯤까지 속도를 올려 주세요.`;
       if (mode.a === 0){
-        if (lastFix && lastFix.v >= 4) return '완전히 멈추면 대기 상태가 돼요.';
+        if (lastFix && lastFix.v >= 4 && !(stopT !== null && clock() - stopT < 1500)) return '완전히 멈추면 대기 상태가 돼요.';
         return hasMotion ? '준비됐어요. 출발하면 자동으로 시작해요.' : '준비됐어요. 가속도 센서가 없어서 GPS로 출발 시점을 추정해요.';
       }
       return armedBelow ? `${mode.a} km/h를 넘는 순간부터 측정해요.` : `${mode.a} km/h 아래로 속도를 낮춰 주세요.`;
@@ -1325,7 +1355,7 @@ function renderDiag(){
     return `<tr><td>${p(tm.getMinutes())}:${p(tm.getSeconds())}</td>
       <td class="${f.gap > 2000 ? 'hi' : ''}">${f.gap ? (f.gap/1000).toFixed(1) : '-'}</td>
       <td class="${f.age > 1500 ? 'hi' : ''}">${(f.age/1000).toFixed(1)}</td>
-      <td>${Math.round(f.acc)}</td><td>${Math.round(f.v)}</td></tr>`;
+      <td>${Math.round(f.acc)}</td><td class="${f.bad ? 'hi' : ''}">${f.bad ? '무시' : Math.round(f.v)}</td></tr>`;
   }).join('');
 }
 function renderRecords(newId){
@@ -1364,7 +1394,7 @@ function renderRecords(newId){
 }
 function srcText(r){
   const s = kOf(r) === 'brake' ? `${r.a} km/h 아래로 떨어진 순간부터 정지까지 · 정지 순간은 감속률로 추정`
-    : r.src === 'accel' ? '출발은 가속도 센서로 감지' : r.a > 0 ? `${r.a} km/h 통과 시점부터 측정` : '출발은 GPS로 추정';
+    : r.src === 'accel' ? '출발은 가속도 센서로 감지' : r.src === 'motion' ? '출발은 떨림이 다시 시작된 순간으로 감지' : r.a > 0 ? `${r.a} km/h 통과 시점부터 측정` : '출발은 GPS로 추정';
   return `${s} · ${fmtDate(r.id)}` + (r.demo ? ' · 데모 기록' : '');
 }
 function buildSeg(){
@@ -1590,7 +1620,57 @@ function renderRides(){
   }
 }
 
-/* ---------- 지도 (Leaflet + OpenStreetMap, 키 없이 동작) ---------- */
+/* ---------- 지도: 카카오맵 우선, 안 되면 OpenStreetMap ----------
+   카카오 JavaScript 키는 원래 웹페이지에 공개되는 키이고, 카카오 콘솔의 'JavaScript SDK 도메인'에 등록된 주소에서만 동작한다.
+   등록 안 된 주소(ngrok·로컬)나 키 문제로 못 불러오면 키 없는 OSM 지도로 그린다 */
+const KAKAO_JS_KEY = 'e6b9f3f7122dca3be63c4cd38c7d8cc6';
+let kakaoP = null;
+function loadKakao(){
+  if (!kakaoP){
+    kakaoP = new Promise((res, rej) => {
+      const s = document.createElement('script'), to = setTimeout(() => rej(new Error('timeout')), 6000);
+      s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&autoload=false`;
+      s.onload = () => {
+        if (!window.kakao || !kakao.maps || !kakao.maps.load){ clearTimeout(to); rej(new Error('sdk')); return; }
+        kakao.maps.load(() => { clearTimeout(to); res(kakao.maps); });
+      };
+      s.onerror = () => { clearTimeout(to); rej(new Error('load')); };
+      document.head.appendChild(s);
+    });
+    kakaoP.catch(() => {});
+  }
+  return kakaoP;
+}
+function drawKakao(km, el, pts, r){
+  el.innerHTML = ''; el.classList.remove('dark');
+  const ll = p => new km.LatLng(p[1], p[2]);
+  // 카카오 SDK 기본 조작 그대로: 한 손가락 이동, 두 손가락·더블탭 확대, 관성 스크롤. 페이지 스크롤은 지도 밖을 쓸면 된다
+  const map = new km.Map(el, {center: ll(pts[0]), level: 5, draggable: true, scrollwheel: true, disableDoubleClickZoom: false});
+  map.addControl(new km.ZoomControl(), km.ControlPosition.RIGHT);
+  curMap = {remove(){ el.innerHTML = ''; }};
+  const top = Math.max(1, r.vmax), bin = v => Math.min(SPEED_COLORS.length - 1, Math.floor(v / top * SPEED_COLORS.length));
+  let seg = [ll(pts[0])], cur = bin(pts[0][3]);
+  const flush = () => { if (seg.length > 1) new km.Polyline({map, path: seg, strokeWeight: 6, strokeColor: SPEED_COLORS[cur], strokeOpacity: .95, strokeStyle: 'solid'}); };
+  for (let i = 1; i < pts.length; i++){
+    const b = bin(pts[i][3]), p = ll(pts[i]);
+    seg.push(p);
+    if (b !== cur){ flush(); seg = [p]; cur = b; }
+  }
+  flush();
+  const dot = (p, color) => new km.CustomOverlay({map, position: ll(p), yAnchor: .5, xAnchor: .5, content: `<div class="kdot" style="background:${color}"></div>`});
+  dot(pts[0], '#0FA968'); dot(pts[pts.length-1], '#13233A');
+  const pk = pts.reduce((m, p) => p[3] > m[3] ? p : m, pts[0]);
+  dot(pk, '#E5484D');
+  new km.CustomOverlay({map, position: ll(pk), yAnchor: 1.9, content: `<div class="klabel">최고 ${pk[3].toFixed(1)} km/h</div>`});
+  const bounds = new km.LatLngBounds(); pts.forEach(p => bounds.extend(ll(p)));
+  map.setBounds(bounds, 30, 30, 30, 30);
+  // 이리저리 옮기다가 한 번에 경로 전체로 돌아오는 버튼
+  const fit = document.createElement('button');
+  fit.className = 'mapfit'; fit.type = 'button'; fit.textContent = '경로 전체';
+  fit.onclick = () => map.setBounds(bounds, 30, 30, 30, 30);
+  el.appendChild(fit);
+  $('mapLeg').innerHTML = `느림<i>${SPEED_COLORS.map(c => `<b style="background:${c}"></b>`).join('')}</i>빠름 · 0–${Math.round(top)} km/h · 카카오맵`;
+}
 let leafletP = null;
 function loadLeaflet(){
   return leafletP ||= new Promise((res, rej) => {
@@ -1601,13 +1681,19 @@ function loadLeaflet(){
 }
 const SPEED_COLORS = ['#5B8DEF', '#3FB5C4', '#F2C21B', '#F59300', '#E5484D'];   // 느림 → 빠름
 async function drawMap(el, pts, r){
+  try {
+    const km = await loadKakao();
+    if (!el.isConnected || openRide !== r.id) return;
+    drawKakao(km, el, pts, r); return;
+  } catch(e){ /* 카카오를 못 쓰는 주소면 아래 OSM 으로 */ }
+  if (!el.isConnected || openRide !== r.id) return;
   let Lf;
   try { Lf = await loadLeaflet(); } catch(e){ el.innerHTML = '<div class="map-msg">지도를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</div>'; return; }
   if (!el.isConnected || openRide !== r.id) return;
   el.innerHTML = '';
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
   el.classList.toggle('dark', dark);   // OSM 타일은 밝은 것뿐이라 다크 모드에선 색을 뒤집는다
-  const map = Lf.map(el, {zoomControl: false, preferCanvas: true, dragging: !Lf.Browser.mobile, scrollWheelZoom: false});
+  const map = Lf.map(el, {zoomControl: false, preferCanvas: true, dragging: true, tap: false, scrollWheelZoom: false});
   curMap = map;
   map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
   Lf.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -1723,17 +1809,55 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') persistLive();
 });
 
+/* ---------- 속도 표시: GPS + 가속도 센서 융합 ----------
+   GPS 속도는 1초에 한 번, 그것도 칩 안에서 거른 값이라 반 박자 늦다. 그래서
+   ① 앞으로 미는 방향(fwd)을 GPS 가속과 가속도 센서를 맞춰 보며 계속 배우고
+   ② 그 방향의 가속도를 적분해 GPS 사이를 메우되, 오차가 쌓이지 않게 GPS 쪽으로 천천히 끌어당기고
+   ③ 떨림이 사라지면(멈춤) GPS를 기다리지 않고 바로 0 으로 내린다 */
+let stillSince = null, lastAccelT = 0, stopT = null, moveStart = null;
+const STILL_A = .45;   // m/s². 이보다 조용하면 멈춰 있다고 본다
+const norm3 = o => { const n = Math.hypot(o.x, o.y, o.z) || 1; return {x: o.x/n, y: o.y/n, z: o.z/n}; };
+function learnFwd(p, f){
+  if (!p || fwdLearn) return;
+  const dt = (f.t - p.t)/1000; if (dt < .3 || dt > 1.6) return;
+  const dvdt = (f.v - p.v)/3.6/dt;                     // m/s²
+  if (Math.abs(dvdt) < .8) return;                     // 확실히 가속하거나 감속할 때만 배운다
+  let x = 0, y = 0, z = 0, n = 0;
+  for (const s of buf) if (s.t > p.t && s.t <= f.t){ x += s.x; y += s.y; z += s.z; n++; }
+  if (n < 5 || Math.hypot(x, y, z)/n < .4) return;
+  const c = norm3({x: x*Math.sign(dvdt), y: y*Math.sign(dvdt), z: z*Math.sign(dvdt)});
+  fwd = fwd ? norm3({x: fwd.x*.75 + c.x*.25, y: fwd.y*.75 + c.y*.25, z: fwd.z*.75 + c.z*.25}) : c;
+}
+function gpsNow(tNow){
+  // 마지막 두 점의 기울기로 '지금' GPS 속도를 예측한다 (최대 0.8초 앞까지, 70%만)
+  if (!lastFix || tNow - Math.max(lastFix.t, lastSeenT) > 4000) return 0;   // 신호가 끊기면 속도를 믿지 않는다
+  const a = fixes[fixes.length-2], b = lastFix;
+  if (!a || b.t - a.t > 2000) return b.v;
+  const sl = (b.v - a.v) / Math.max(.2, (b.t - a.t)/1000), ahead = Math.min(.8, Math.max(0, (tNow - b.t)/1000));
+  return Math.max(0, b.v + sl * ahead * .7);
+}
+function updateSpeed(dt, tNow){
+  const gp = gpsNow(tNow), fused = fwd && hasMotion && tNow - lastAccelT < 300;
+  // 떨림이 멎었다 = 섰다. 이때는 늦게 따라오는 GPS 쪽으로 끌어당기지 않고 바로 0 으로 내린다
+  const stillStop = stillSince !== null && tNow - stillSince > 400 && (P.stillStop || gp < 8);
+  if (stillStop) vEst *= Math.exp(-dt * 10);
+  else {
+    if (fused){
+      vEst += (Math.abs(aF) > .15 ? aF : 0) * 3.6 * dt;   // 가속도 적분 (작은 값은 버려서 떠내려가지 않게)
+      vEst += (gp - vEst) * (1 - Math.exp(-dt * 1.8));    // GPS로 천천히 끌어당김
+    } else vEst += (gp - vEst) * (1 - Math.exp(-dt * 6));
+    if (gp < 1.5 && Math.abs(aF) < .4) vEst *= Math.exp(-dt * 4);
+  }
+  vEst = Math.max(0, Math.min(vEst, VMAX * 1.2));
+  dispV += (vEst - dispV) * (1 - Math.exp(-dt * 12));
+}
+
 /* ---------- 렌더 루프 ---------- */
 let lastSpd = -1, lastTxt = '', lastG = '', lastGw = -1;
 function frame(now){
   const dt = Math.min(.1, lastFrame ? (now - lastFrame)/1000 : 0); lastFrame = now;
-  const tNow = clock(), gv = lastFix ? lastFix.v : 0;
-
-  if (fwd && lastFix && (state === S.RUN || state === S.DONE) && mode.k !== 'brake') vEst += aF * 3.6 * dt;   // 센서 융합: GPS 사이를 가속도로 메움
-  else vEst += (gv - vEst) * (1 - Math.exp(-dt*6));
-  if (gv < 1.5 && Math.abs(aF) < .4) vEst *= Math.exp(-dt*4);
-  vEst = Math.max(0, vEst);
-  dispV += (vEst - dispV) * (1 - Math.exp(-dt*12));
+  const tNow = clock();
+  updateSpeed(dt, tNow);
 
   const shown = dispV < 1.5 ? 0 : Math.round(dispV);
   if (shown !== lastSpd){ $('spd').textContent = shown; lastSpd = shown; }
