@@ -132,7 +132,47 @@ body[data-state="run"] .th-comfort .g-knob,body.riding .th-comfort .g-knob{strok
 .gauge.fx .readout,.gauge.fx .glive{animation:fxhide 1.3s both}
 @keyframes fxhide{0%,66%{opacity:0}100%{opacity:1}}
 .gauge::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;background:linear-gradient(100deg,transparent 35%,color-mix(in srgb,var(--acc,#fff) 40%,transparent) 50%,transparent 65%) no-repeat;background-size:260% 100%}
-.gauge.fx::after{animation:streak .85s .08s cubic-bezier(.4,0,.2,1) both}
+.gauge.fx.th-sportp::after{animation:streak .85s .3s cubic-bezier(.4,0,.2,1) both}
+/* 모드별 연출 (현대 드라이브 모드 영상 참고)
+   에코: 가운데서 초록 빛이 번지고 링이 새로 그려진다 · 컴포트: 파란 빛이 링을 한 바퀴 돈다
+   스포츠: 충격파와 불꽃, LED 링이 끝까지 쓸고 온다 · 스포츠+: 두 번 끊어 밟는 회전, 더 센 충격파와 흔들림, 글자가 깨졌다 붙는다 */
+.modefx.m-eco.go,.modefx.m-comfort.go{animation:fxsoft 1.45s ease both}
+.modefx.m-eco b,.modefx.m-comfort b{font-style:normal;letter-spacing:.32em;text-shadow:none}
+@keyframes fxsoft{0%{opacity:0;transform:translateY(10px);letter-spacing:.5em}28%{opacity:1;transform:none}72%{opacity:1}100%{opacity:0}}
+.modefx.m-sportp.go b{animation:glitch .09s steps(1) .12s 6}
+@keyframes glitch{0%{text-shadow:-4px 0 #00E5FF,4px 0 #FF2D55;transform:translateX(-3px) skewX(-6deg)}50%{text-shadow:4px 0 #00E5FF,-4px 0 #FF2D55;transform:translateX(3px) skewX(4deg)}}
+.fxl *{transform-box:view-box;transform-origin:160px 162px;pointer-events:none}
+.fx-bloom{opacity:0;animation:bloom 1.3s cubic-bezier(.2,.8,.2,1) both}
+@keyframes bloom{0%{opacity:0;transform:scale(.12)}35%{opacity:1}100%{opacity:0;transform:scale(1.15)}}
+.fx-disc{opacity:0;animation:disc 1.25s ease both}
+@keyframes disc{0%,100%{opacity:0}40%{opacity:.16}}
+.fx-rim{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:70 1000;filter:drop-shadow(0 0 7px currentColor);animation:rim 1.15s cubic-bezier(.5,0,.2,1) both}
+@keyframes rim{0%{stroke-dashoffset:70;opacity:0}8%{opacity:1}88%{opacity:1}100%{stroke-dashoffset:-1000;opacity:0}}
+.fx-shock{fill:none;opacity:0;animation:shock .95s cubic-bezier(.1,.7,.3,1) both}
+@keyframes shock{0%{opacity:1;transform:scale(.1);stroke-width:14}100%{opacity:0;transform:scale(1.3);stroke-width:1}}
+.fx-spark{opacity:0;stroke-linecap:round;animation:spark .8s cubic-bezier(.1,.7,.3,1) both}
+@keyframes spark{0%{opacity:0;transform:scale(.4)}12%{opacity:1}100%{opacity:0;transform:scale(2.1)}}
+.g-track.draw{stroke-dasharray:1000;animation:draw 1s cubic-bezier(.3,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+/* 아반떼 N 실제 전환 참고: 노멀=푸른 빛이 차오름, 스포츠=붉게 물들고 테두리가 그려짐, N=불꽃 고리 + 푸른 코어 */
+.fx-flood{opacity:0;animation:flood 1.15s ease both}
+@keyframes flood{0%{opacity:0;transform:scale(.85)}30%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.03)}}
+.fx-rdraw{fill:none;stroke-linecap:round;stroke-dasharray:1000;filter:drop-shadow(0 0 6px currentColor);animation:rdraw 1.2s cubic-bezier(.3,.7,.2,1) both}
+@keyframes rdraw{0%{stroke-dashoffset:1000;opacity:1}65%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+.fx-ringflash{fill:none;filter:drop-shadow(0 0 10px currentColor);animation:ringflash 1.2s ease both}
+@keyframes ringflash{0%{opacity:0;stroke-width:4}25%{opacity:1;stroke-width:14}100%{opacity:0;stroke-width:4}}
+.fx-core{opacity:0;animation:core 1.85s cubic-bezier(.2,.8,.2,1) both}
+@keyframes core{0%{opacity:0;transform:scale(.5)}18%{opacity:1;transform:scale(1)}70%{opacity:.85}100%{opacity:0;transform:scale(1.05)}}
+.fx-fire{opacity:0;animation:fire 1.85s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fire{0%{opacity:0;transform:scale(1.45)}15%{opacity:1}45%{transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(.98)}}
+.fx-ember{opacity:0;animation:ember 1.1s ease-out both}
+@keyframes ember{0%{opacity:0;transform:scale(1)}15%{opacity:1}100%{opacity:0;transform:scale(1.55)}}
+.th-sportp .spd{text-shadow:0 0 24px rgba(70,200,255,.5)}
+.modefx.m-sportp b{color:#fff;text-shadow:0 0 18px rgba(70,200,255,.85),0 0 42px rgba(255,122,26,.6)}
+.gauge.shake{animation:shake .42s linear .05s}
+.gauge.shake2{animation:shake2 .75s linear .1s}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-3px,1px)}40%{transform:translate(3px,-1px)}60%{transform:translate(-2px,1px)}80%{transform:translate(2px,0)}}
+@keyframes shake2{0%,100%{transform:none}8%{transform:translate(-2px,1px)}16%{transform:translate(2px,0)}30%{transform:translate(-6px,2px) rotate(-.5deg)}42%{transform:translate(6px,-2px) rotate(.5deg)}54%{transform:translate(-4px,1px)}66%{transform:translate(4px,-1px)}78%{transform:translate(-2px,1px)}90%{transform:translate(1px,0)}}
 @keyframes streak{0%{opacity:1;background-position:130% 0}100%{opacity:0;background-position:-30% 0}}
 .th-eco{--acc:var(--go)} .th-comfort{--acc:var(--ink2)}
 .shift.flash i{animation:blink .16s steps(1) infinite}
@@ -524,7 +564,7 @@ const THEMES = {
   eco:     {badge:'ECO'},
   comfort: {badge:'COMFORT'},
   sport:   {badge:'SPORT',  cl:1, seg:1, rot:1, lights:1, color: f => '#FF4D52'},
-  sportp:  {badge:'SPORT+', cl:1, seg:1, rot:1, lights:1, color: f => f < .6 ? '#F5A300' : f < .9 ? '#FF7A1A' : '#FF3B3B'},
+  sportp:  {badge:'SPORT+', cl:1, seg:1, rot:1, lights:1, redline:1, color: f => f < .6 ? '#F5A300' : f < .9 ? '#FF7A1A' : '#FF3B3B'},
 };
 // 차종별 설정. 가속 구간 [a,b] 에서 b=0 은 '최고속도'. brakes 는 제동 시작 속도
 const PROFILES = {
@@ -614,12 +654,16 @@ function buildGauge(){
   $('gBadge').textContent = dmInfo(prof, dm).badge || GT.badge;
   let h = '';
   if (GT.cl) h += '<defs><linearGradient id="bzg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5C6878"/><stop offset=".5" stop-color="#18212C"/><stop offset="1" stop-color="#3A4654"/></linearGradient>'
-    + '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r=".7" fill="#fff" fill-opacity=".06"/></pattern></defs>'
-    + `<circle cx="${CX}" cy="${CY}" r="${R-38}" fill="url(#dots)"/><path class="bz" d="${arcPath(0, VMAX, R+15)}"/>`;   // 촘촘한 점 무늬 다이얼과 금속 테
+    + '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r=".7" fill="#fff" fill-opacity=".06"/></pattern>'
+    + '<pattern id="carbon" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#fff" fill-opacity=".05"/><rect x="4" y="4" width="4" height="4" fill="#fff" fill-opacity=".05"/><rect x="4" width="4" height="4" fill="#fff" fill-opacity=".018"/></pattern>'
+    + '<radialGradient id="nface"><stop offset="0" stop-color="#0D4A74" stop-opacity=".8"/><stop offset=".7" stop-color="#082A45" stop-opacity=".45"/><stop offset="1" stop-color="#05121E" stop-opacity="0"/></radialGradient></defs>'
+    // 스포츠: 점 무늬 다이얼 · 스포츠+: N 모드처럼 푸른 다이얼 위에 카본 무늬. 둘 다 금속 테
+    + (th === 'sportp' ? `<circle cx="${CX}" cy="${CY}" r="${R-24}" fill="url(#nface)"/>` : '')
+    + `<circle cx="${CX}" cy="${CY}" r="${R-38}" fill="url(#${th === 'sportp' ? 'carbon' : 'dots'})"/><path class="bz" d="${arcPath(0, VMAX, R+15)}"/>`;
   if (GT.seg){
     const st = VMAX / SEGS;
     h += '<g id="gSeg">' + Array.from({length: SEGS}, (_, i) => `<path class="sg" d="${arcPath(i*st + st*.16, (i+1)*st - st*.16, R)}"/>`).join('') + '</g>';
-  } else h += `<path class="g-track" d="${arcPath(0,VMAX,R)}"/><path class="g-zone" id="gZone"/>`;
+  } else h += `<path class="g-track" pathLength="1000" d="${arcPath(0,VMAX,R)}"/><path class="g-zone" id="gZone"/>`;
   for (let v = 0; v <= VMAX; v += P.tick){
     const a = ang(v), maj = v % P.major === 0, p1 = pt(a, R - (GT.seg ? 22 : 18)), p2 = pt(a, R - (GT.seg ? (maj ? 34 : 28) : (maj ? 29 : 23)));
     h += `<line class="tk${maj?' maj':''}" x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}"/>`;
@@ -632,6 +676,7 @@ function buildGauge(){
   if (!GT.seg) h += `<path class="g-prog" id="gProg" pathLength="1000" d="${arcPath(0,VMAX,R)}"/>`;
   h += `<line class="g-mark" id="gMark"/>`;
   if (!GT.seg) h += `<circle class="g-knob" id="gKnob" r="9"/>`;
+  h += '<g id="fxLayer" class="fxl"></g>';
   $('gauge').innerHTML = h;
   segEls = [...document.querySelectorAll('#gSeg .sg')]; litN = -1; shiftN = -1;
   placeZone();
@@ -655,9 +700,10 @@ function paintCluster(v){
     const ref = GTARGET || VMAX * .8, st = VMAX / SEGS;
     segEls.forEach((el, i) => {
       // 맨 앞 칸은 하얗게 달아오른 색으로 (속도의 끝이 한눈에 보이게)
-      const on = i < n, lead = on && i === n - 1, c = on ? GT.color((i + .5) * st / ref) : '';
+      const on = i < n, lead = on && i === n - 1, fr = (i + .5) * st / ref, c = on ? GT.color(fr) : '';
       el.classList.toggle('on', on); el.classList.toggle('lead', lead);
-      el.style.stroke = lead ? '#FFEDE3' : c;
+      // 스포츠+는 목표 직전 10% 칸이 꺼져 있어도 어둡게 붉다 (타코미터 레드존)
+      el.style.stroke = lead ? '#FFEDE3' : on ? c : GT.redline && GTARGET && fr > .9 && fr <= 1 ? '#431619' : '';
       if (on) el.style.setProperty('--glow', c);
     });
     litN = n;
@@ -684,30 +730,98 @@ function setDriveMode(id, silent){
   buildGauge(); renderSegBest(); renderRecords();
   if (!silent) runModeFx();
 }
-// N 모드 진입처럼: 모드 이름이 떠오르고, 링이 끝까지 쓸었다 돌아오고, 엔진 회전음이 한 번 오른다
+// 모드 전환 연출. 모드마다 빛, 링 움직임, 소리, 진동이 다 다르다 (CSS 쪽 설명 참고)
 let sweep = null;
+const SWEEPS = {   // LED 링이 쓸고 가는 모양 [진행률, 링 높이]
+  sport:  {ms: 1150, k: [[0,0], [.42,1], [.52,1], [1,0]]},
+  sportp: {ms: 1750, k: [[0,0], [.2,0], [.3,.62], [.4,.34], [.62,1], [.7,1], [1,0]]},   // 불꽃이 조여 든 뒤 두 번 끊어 밟고 끝까지
+};
+const FX_VIB = {eco: 8, comfort: 15, sport: [20, 60, 90], sportp: [25, 40, 25, 40, 140]};
+const FX_MS = {eco: 1600, comfort: 1600, sport: 1600, sportp: 2000};
 function runModeFx(){
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const box = $('gaugeBox'), fx = $('modeFx'), d = dmInfo(prof, dm);
+  const box = $('gaugeBox'), fx = $('modeFx'), d = dmInfo(prof, dm), th = d.th;
   $('fxName').textContent = d.badge || GT.badge;
   $('fxSub').textContent = `${P.name} · ${d.name}`;
-  box.classList.remove('fx'); fx.classList.remove('go'); void box.offsetWidth;
+  box.classList.remove('fx', 'shake', 'shake2'); fx.className = 'modefx m-' + th; void box.offsetWidth;
   box.classList.add('fx'); fx.classList.add('go');
+  if (th === 'sport') box.classList.add('shake'); else if (th === 'sportp') box.classList.add('shake2');
+  $('fxLayer').innerHTML = fxMarkup(th);
+  const track = $('gauge').querySelector('.g-track');
+  if (th === 'eco' && track) track.classList.add('draw');
+  sweep = SWEEPS[th] ? {t: performance.now(), ...SWEEPS[th]} : null;
+  fxSound(th); vibrate(FX_VIB[th]);
   clearTimeout(runModeFx.t);
-  runModeFx.t = setTimeout(() => { box.classList.remove('fx'); fx.classList.remove('go'); }, 1350);
-  sweep = {t: performance.now()};
-  revSound(!!GT.cl); vibrate(GT.cl ? [20, 60, 90] : 20);
+  runModeFx.t = setTimeout(() => {
+    box.classList.remove('fx', 'shake', 'shake2'); fx.classList.remove('go');
+    const l = $('fxLayer'); if (l) l.innerHTML = '';
+    const tr = $('gauge').querySelector('.g-track'); if (tr) tr.classList.remove('draw');
+  }, FX_MS[th]);
 }
-function revSound(hard){
+function fxMarkup(th){
+  const c = `cx="${CX}" cy="${CY}"`;
+  if (th === 'eco') return '<defs><radialGradient id="fxg"><stop offset="0" stop-color="#8CFFC4" stop-opacity=".95"/><stop offset=".5" stop-color="#0FA968" stop-opacity=".5"/><stop offset="1" stop-color="#0FA968" stop-opacity="0"/></radialGradient></defs>'
+    + `<circle class="fx-bloom" ${c} r="118" fill="url(#fxg)"/><circle class="fx-bloom" ${c} r="80" fill="url(#fxg)" style="animation-delay:.28s"/>`;
+  // 컴포트(노멀): 다이얼이 푸른 빛으로 차오르고 테두리가 한 번 번쩍
+  if (th === 'comfort') return '<defs><radialGradient id="fxb"><stop offset="0" stop-color="#E8FAFF" stop-opacity=".9"/><stop offset=".55" stop-color="#3FB8FF" stop-opacity=".55"/><stop offset="1" stop-color="#1E7BFF" stop-opacity="0"/></radialGradient></defs>'
+    + `<circle class="fx-flood" ${c} r="${R}" fill="url(#fxb)"/>`
+    + `<path class="fx-ringflash" d="${arcPath(0, VMAX, R)}" stroke="#8FE3FF" style="color:#3FB8FF"/>`
+    + `<circle class="fx-shock" ${c} r="120" stroke="#7FD4FF" style="animation-delay:.1s"/>`;
+  // 스포츠: 다이얼이 붉게 물들고 빨간 테두리가 한 바퀴 그려진다
+  if (th === 'sport') return '<defs><radialGradient id="fxr"><stop offset="0" stop-color="#FF8A8D" stop-opacity=".85"/><stop offset=".6" stop-color="#E5484D" stop-opacity=".6"/><stop offset="1" stop-color="#8E0F14" stop-opacity="0"/></radialGradient></defs>'
+    + `<circle class="fx-flood" ${c} r="${R+4}" fill="url(#fxr)"/>`
+    + `<path class="fx-rdraw" pathLength="1000" d="${arcPath(0, VMAX, R+15)}" stroke="#FF3B3B" stroke-width="5" style="color:#FF3B3B"/>`
+    + `<circle class="fx-shock" ${c} r="120" stroke="#FF4D52" style="animation-delay:.05s"/>`;
+  // 스포츠+ (아반떼 N 의 N 모드 진입): 불꽃 고리가 조여 들어 계기판 테가 되고, 가운데는 푸른 코어가 빛난다
+  let s = '<defs><radialGradient id="fxc"><stop offset="0" stop-color="#E6FDFF"/><stop offset=".35" stop-color="#4FD6FF" stop-opacity=".95"/><stop offset=".75" stop-color="#0A66C2" stop-opacity=".5"/><stop offset="1" stop-color="#062A55" stop-opacity="0"/></radialGradient>'
+    + '<filter id="fxFire" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".06 .09" numOctaves="2" seed="7" result="n"><animate attributeName="baseFrequency" dur=".5s" values=".06 .09;.09 .14;.06 .09" repeatCount="indefinite"/></feTurbulence>'
+    + '<feDisplacementMap in="SourceGraphic" in2="n" scale="16" result="d"/><feGaussianBlur in="d" stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="d"/></feMerge></filter></defs>'
+    + `<circle class="fx-core" ${c} r="${R-30}" fill="url(#fxc)"/>`
+    + `<g class="fx-fire" filter="url(#fxFire)"><circle ${c} r="${R}" fill="none" stroke="#FF5A14" stroke-width="26"/><circle ${c} r="${R}" fill="none" stroke="#FFB23F" stroke-width="12"/><circle ${c} r="${R}" fill="none" stroke="#FFF1B8" stroke-width="3"/></g>`;
+  for (let i = 0; i < 28; i++){   // 튀는 불씨
+    const a = i / 28 * 2 * Math.PI + (i % 2) * .09, rr = R + (i % 3) * 6 - 6;
+    s += `<circle class="fx-ember" cx="${(CX + rr*Math.cos(a)).toFixed(1)}" cy="${(CY + rr*Math.sin(a)).toFixed(1)}" r="${(1.6 + (i % 3) * .7).toFixed(1)}"`
+      + ` fill="${['#FFD34D', '#FF8A1A', '#FFF1B8'][i % 3]}" style="animation-delay:${(.35 + (i % 7) * .06).toFixed(2)}s"/>`;
+  }
+  return s;
+}
+function fxSound(th){
   if (!prefs.sound || !audio) return;
+  const note = (f, at, dur, type, vol) => {
+    try {
+      const t = audio.currentTime + at, o = audio.createOscillator(), g = audio.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .015); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+      o.connect(g).connect(audio.destination); o.start(t); o.stop(t + dur + .02);
+    } catch(e){}
+  };
+  if (th === 'eco'){ note(523, 0, .6, 'sine', .07); note(784, .16, .8, 'sine', .06); }          // 부드럽게 두 음
+  else if (th === 'comfort'){ note(988, 0, 1, 'triangle', .07); note(1976, .02, .5, 'sine', .015); }   // 맑은 종소리 한 번
+  else if (th === 'sport') revSound(1);
+  else { whoosh(); setTimeout(() => revSound(2), 320); }   // 불꽃이 확 붙는 소리 뒤에 회전음
+}
+function whoosh(){
   try {
-    const t = audio.currentTime, o = audio.createOscillator(), f = audio.createBiquadFilter(), g = audio.createGain(), vol = hard ? .12 : .05;
-    o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = hard ? 1500 : 800;
-    o.frequency.setValueAtTime(hard ? 85 : 140, t);
-    o.frequency.exponentialRampToValueAtTime(hard ? 440 : 280, t + .45);
-    o.frequency.exponentialRampToValueAtTime(hard ? 140 : 170, t + 1.1);
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .05); g.gain.setValueAtTime(vol, t + .5); g.gain.exponentialRampToValueAtTime(.001, t + 1.15);
-    o.connect(f).connect(g).connect(audio.destination); o.start(t); o.stop(t + 1.2);
+    const t = audio.currentTime, len = Math.floor(audio.sampleRate * 1.2), b = audio.createBuffer(1, len, audio.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const s = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+    s.buffer = b; f.type = 'bandpass'; f.Q.value = .8;
+    f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(2600, t + .45); f.frequency.exponentialRampToValueAtTime(500, t + 1.2);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.2, t + .08); g.gain.exponentialRampToValueAtTime(.001, t + 1.2);
+    s.connect(f).connect(g).connect(audio.destination); s.start(t); s.stop(t + 1.2);
+  } catch(e){}
+}
+function revSound(level){
+  try {
+    const t = audio.currentTime, o = audio.createOscillator(), f = audio.createBiquadFilter(), g = audio.createGain();
+    o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = level > 1 ? 1700 : 1400;
+    // [초, 주파수]. 스포츠는 한 번 크게, 스포츠+는 부앙-부앙 두 번 끊어 밟고 크게 한 번
+    const pts = level > 1 ? [[0,85], [.12,320], [.22,150], [.34,360], [.46,170], [.78,520], [1.35,140]] : [[0,90], [.45,430], [1.1,140]];
+    o.frequency.setValueAtTime(pts[0][1], t);
+    pts.slice(1).forEach(([s, fr]) => o.frequency.exponentialRampToValueAtTime(fr, t + s));
+    const end = pts[pts.length-1][0], vol = level > 1 ? .14 : .12;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .04); g.gain.setValueAtTime(vol, t + end - .5); g.gain.exponentialRampToValueAtTime(.001, t + end);
+    o.connect(f).connect(g).connect(audio.destination); o.start(t); o.stop(t + end + .05);
   } catch(e){}
 }
 
@@ -1609,14 +1723,16 @@ function frame(now){
 
   const shown = dispV < 1.5 ? 0 : Math.round(dispV);
   if (shown !== lastSpd){ $('spd').textContent = shown; lastSpd = shown; }
-  // 모드 전환 스윕: 0.5초에 끝까지 올라갔다가 현재 속도로 내려온다
+  // 모드 전환 스윕: SWEEPS 의 점들을 부드럽게 이어서 링을 끝까지 올렸다가 현재 속도로 내린다
   let gvShow = dispV;
   if (sweep){
-    const p = (now - sweep.t) / 1150;
+    const p = (now - sweep.t) / sweep.ms;
     if (p >= 1) sweep = null;
     else {
-      const k = p < .42 ? 1 - Math.pow(1 - p/.42, 3) : p < .52 ? 1 : 1 - Math.pow((p - .52)/.48, 2);
-      gvShow = dispV + (VMAX - dispV) * k;
+      const K = sweep.k; let i = 1;
+      while (i < K.length - 1 && K[i][0] < p) i++;
+      const [p0, k0] = K[i-1], [p1, k1] = K[i], u = Math.min(1, Math.max(0, (p - p0)/(p1 - p0))), e = u*u*(3 - 2*u);
+      gvShow = dispV + (VMAX - dispV) * (k0 + (k1 - k0) * e);
     }
   }
   if (GT.seg) paintCluster(gvShow);

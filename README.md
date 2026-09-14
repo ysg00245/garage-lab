@@ -20,12 +20,13 @@ ngrok http 8000        # 다른 터미널에서
 
 ngrok이 준 `https://…` 주소로 열면 루트 목록이 나오고, 거기서 실험을 고릅니다. 코드를 고치면 새로고침만 하면 됩니다.
 
-## GitHub Pages로 고정 주소 만들기 (선택)
+## 고정 주소 (GitHub Pages)
 
-저장소: `ysg00245/garage-lab` (현재 private). 무료 계정은 저장소를 **public**으로 바꿔야 Pages를 쓸 수 있습니다.
+**https://ysg00245.github.io/garage-lab/** — `main`에 푸시하면 1~2분 뒤 자동으로 반영됩니다.
 
-1. Settings → Pages → Source를 `main` 브랜치, 폴더는 `/ (root)`로 지정합니다.
-2. 1~2분 뒤 `https://ysg00245.github.io/garage-lab/` 으로 접속합니다.
+- 저장소 `ysg00245/garage-lab`는 Pages 때문에 **public**입니다. 비밀값을 커밋하지 마세요.
+- 제로백: https://ysg00245.github.io/garage-lab/zeroback/
+- 폰의 기록(브라우저 저장값)은 주소별로 따로라, ngrok 주소에서 쌓은 기록은 여기서 보이지 않습니다.
 
 ## 실험 추가하기
 
