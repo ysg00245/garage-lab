@@ -1,6 +1,6 @@
 {
-  "version": "0.21.1-ko.2",
-  "build": 3,
-  "url": "https://github.com/ysg00245/garage-lab/releases/download/lightcraft-tab-0.21.1-ko.2/lightcraft-tab-0.21.1-ko.2.zip",
-  "sha256": "90b5f69b2bb6a9c1af165db5fcb9432e382a743efb59e81bb1e75394121b0871"
+  "version": "0.21.1-rm.1",
+  "build": 4,
+  "url": "https://github.com/ysg00245/garage-lab/releases/download/lightcraft-tab-0.21.1-rm.1/lightcraft-tab-0.21.1-rm.1.zip",
+  "sha256": "14bb8f30356fabe22102daa762b86a7446f2a9fc7114893aa9ad24e85d476f67"
 }
